@@ -36,8 +36,7 @@ Icon?
 
 # Reference manuals are symlinked from outside the repo. Never commit the PDFs:
 # they are vendor documents and some are large.
-reference/manuals/*
-!reference/manuals/README.md
+reference/manuals
 reference/midi/*
 !reference/midi/README.md
 

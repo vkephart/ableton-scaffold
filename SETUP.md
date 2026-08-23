@@ -213,8 +213,9 @@ rm -rf reference/manuals
 ln -s ~/Manuals ~/music-studio/ableton-scaffold/reference/manuals
 ```
 
-Recreate `reference/manuals/README.md` afterwards if the symlink replaced it, or keep the
-manuals inside a subfolder of the symlink target.
+`reference/manuals` is gitignored as a symlink, so nothing about your local manuals folder
+is committed. What belongs in it, and why the agents insist on it, is in
+`reference/README.md`.
 
 ---
 

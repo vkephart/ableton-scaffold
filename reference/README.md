@@ -1,14 +1,13 @@
-# reference/manuals/
+# reference/
 
-Plugin and hardware documentation. This directory is meant to be a symlink to wherever you
-keep vendor PDFs.
+`manuals/` is plugin and hardware documentation, and is meant to be a symlink to wherever
+you keep vendor PDFs. `midi/` is a working area for keymaps and reference MIDI. Both are
+gitignored: vendor PDFs are not ours to redistribute and some are large.
 
 ```bash
 rm -rf reference/manuals
 ln -s ~/Manuals ~/music-studio/ableton-scaffold/reference/manuals
 ```
-
-The contents are gitignored. Vendor PDFs are not ours to redistribute and some are large.
 
 ## What belongs here
 
