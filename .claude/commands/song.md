@@ -18,29 +18,17 @@ then this repo. The usual setup is `export ABLETON_SONGS_DIR=~/music-studio`.
 
 ## Creating a new song
 
-Song content lives in its own repo, outside this one. Never create it inside this
-checkout: nested git repos cause trouble, and this repo stays free of song content so it
-can be shared.
+Song content lives in its own repo, outside this one, and a new one is created by the
+scaffold's bootstrap script rather than by hand:
 
 ```bash
-mkdir -p "$ABLETON_SONGS_DIR/<name>"
-cd "$ABLETON_SONGS_DIR/<name>"
-git init
-cp -r ~/music-studio/ableton-scaffold/templates/song/. .
-mkdir -p parts/{drums,bass,guitars,keys,vocals,fx} chain mix
+<scaffold>/bin/new-song <name>
 ```
 
-Then add a `.gitignore` for the generated cache:
+It creates the track repo, fills it from `templates/song/`, writes its `CLAUDE.md`, and
+symlinks the agents and commands into its `.claude/` so a session started there picks them
+up. It refuses to create the repo inside the scaffold, and is safe to re-run.
 
-```
-parts/**/*.md
-chain/*.md
-mix/*.png
-```
-
-The hand-written files are the ones worth versioning. `parts/` and `chain/` are `/pull`
-output and rebuild from the session at any time.
-
-Fill in `brief.md` and `structure.md` before doing musical work in the new song. The
-specialist agents read them first, and without them every judgement about whether
-something is deliberate has to be asked rather than looked up.
+Fill in `brief.md` and `structure.md` before doing musical work. The specialist agents read
+them first, and without them every judgement about whether something is deliberate has to
+be asked rather than looked up.

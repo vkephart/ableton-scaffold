@@ -1,15 +1,11 @@
 # Song templates
 
-Starting files for a new track repo. Copy the contents of this folder into the new song
-folder, then fill them in.
+The documents a track repo starts with. Do not copy these by hand; the bootstrap script
+places them, along with the track repo's `CLAUDE.md` and the symlinks that make the agents
+and slash commands available there:
 
 ```bash
-mkdir -p "$ABLETON_SONGS_DIR/<name>"
-cd "$ABLETON_SONGS_DIR/<name>"
-git init
-cp -r ~/music-studio/ableton-scaffold/templates/song/. .
-rm README.md
-mkdir -p parts/{drums,bass,guitars,keys,vocals,fx} chain mix
+<scaffold>/bin/new-song <name>
 ```
 
 `brief.md` and `structure.md` are the two to fill in first. Every specialist agent reads
@@ -17,3 +13,7 @@ them before doing anything, and without them each judgement about whether someth
 deliberate has to be asked rather than looked up.
 
 Everything here uses **C3 = MIDI 60**.
+
+Editing a file in this folder changes what future songs start with. It does not change any
+existing track repo, because these are copied once at creation rather than symlinked. The
+agents and commands are the opposite: symlinked, so an edit reaches every song at once.

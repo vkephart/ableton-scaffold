@@ -221,27 +221,30 @@ manuals inside a subfolder of the symlink target.
 ## 7. Start a track repo
 
 ```bash
-mkdir -p ~/music-studio/<song-name>
-cd ~/music-studio/<song-name>
-git init
-cp -r ~/music-studio/ableton-scaffold/templates/song/. .
-mkdir -p parts/{drums,bass,guitars,keys,vocals,fx} chain mix
+bin/new-song <song-name>
 ```
 
-Add a `.gitignore` in the track repo for the generated cache:
+That creates `$ABLETON_SONGS_DIR/<song-name>` as its own git repo, fills it with the
+documents from `templates/song/`, writes a `CLAUDE.md` into it, and symlinks this repo's
+agents and slash commands into its `.claude/` so a Claude Code session started there picks
+them up. Without that last step a track repo gets no agents, no commands and no
+conventions.
 
-```
-parts/**/*.md
-chain/*.md
-mix/*.png
-```
+Pass `--songs-dir` to put it somewhere other than this repo's parent. The script refuses
+to create a track repo inside this one, and is safe to re-run: it creates only missing
+files and never overwrites work you have edited.
 
-Keep the folders with `.gitkeep` files. `parts/` and `chain/` are `pull.py` output and can
-always be rebuilt from the session; `structure.md`, `harmony.md`, `brief.md`, `lyrics.md`
-and `log.md` are written by hand and are the ones worth versioning.
+Fill in `brief.md` and `structure.md` before doing musical work. Every agent reads them
+first.
 
-Then confirm the round trip:
+Then confirm the round trip with Ableton open:
 
 ```bash
 python3 bridge/pull.py --song <song-name>
+```
+
+After cloning a track repo on another machine, rebuild its symlinks:
+
+```bash
+<scaffold>/bin/new-song <song-name> --relink
 ```
