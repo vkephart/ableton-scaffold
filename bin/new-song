@@ -90,6 +90,12 @@ if [ "$relink_only" -eq 0 ]; then
         place "$f" "$target/$name"
     done
 
+    # templates/song/mix/ mirrors into the track repo's mix/ folder.
+    for f in "$SCAFFOLD"/templates/song/mix/*.md; do
+        [ -e "$f" ] || continue
+        place "$f" "$target/mix/$(basename "$f")"
+    done
+
     # The track repo's own CLAUDE.md, with the song name and scaffold path filled in.
     # This is what a Claude Code session started in the track repo reads first.
     if [ ! -e "$target/CLAUDE.md" ]; then
