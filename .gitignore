@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs, secrets, temp
+*.log
+.env
+.env.*
+
+# Local Claude Code settings are per-machine
+.claude/settings.local.json
+
+# Reference manuals are symlinked from outside the repo. Never commit the PDFs:
+# they are vendor documents and some are large.
+reference/manuals/*
+!reference/manuals/README.md
+reference/midi/*
+!reference/midi/README.md
+
+# Song content does not belong in this repo at all. These rules are a backstop
+# in case a track repo is ever cloned or symlinked in here by mistake.
+songs/
+*.als
+*.alc
+*.asd
+*.adg
+*.adv
+*.wav
+*.aif
+*.aiff
+*.mp3
+*.m4a
+*.flac

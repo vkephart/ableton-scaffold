@@ -1,0 +1,12 @@
+{
+  "enabledTools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
+  "mcpServers": {
+    "AbletonMCP": {
+      "command": "uvx",
+      "args": ["ableton-mcp"]
+    }
+  },
+  "experimental": {
+    "agents": true
+  }
+}
