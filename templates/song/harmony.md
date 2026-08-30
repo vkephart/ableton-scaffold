@@ -19,13 +19,12 @@ error immediately.
 
 ## Chord map by section
 
+Section names come from `structure.md` and must match it exactly. That file is canonical;
+this one follows it.
+
 | Section | Progression | Roman numerals | Notes |
 |---|---|---|---|
-| Intro | | | |
-| Verse 1 | | | |
-| Chorus 1 | | | |
-| Bridge | | | |
-| Outro | | | |
+| <Section> | | | |
 
 ## Voice-leading notes
 

@@ -1,22 +1,12 @@
 # <Song title> — lyrics
 
-Canonical text. Tagged by section so it lines up with `structure.md`.
+Canonical text for the words. Tagged by section so it lines up with `structure.md`.
 
-## Intro
+One `##` heading per sung section, in play order, named exactly as `structure.md` names it.
+That file is canonical for section names; this one follows it. Instrumental sections do not
+need a heading here.
 
-## Verse 1
-
-## Pre-Chorus 1
-
-## Chorus 1
-
-## Verse 2
-
-## Chorus 2
-
-## Bridge
-
-## Outro
+## <Section>
 
 ---
 

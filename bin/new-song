@@ -107,7 +107,11 @@ if [ "$relink_only" -eq 0 ]; then
         kept=$((kept + 1))
     fi
 
-    for d in parts/drums parts/bass parts/guitars parts/keys parts/vocals parts/fx chain mix; do
+    # Every category pull.py can file a part under. Keep this list in step with
+    # pull.py's CATEGORY_MAP: a category pull.py emits but new-song has not created is
+    # a folder that appears out of nowhere on the first pull.
+    for d in parts/drums parts/percussion parts/bass parts/guitars parts/keys \
+             parts/vocals parts/fx chain mix; do
         mkdir -p "$target/$d"
         [ -e "$target/$d/.gitkeep" ] || touch "$target/$d/.gitkeep"
     done

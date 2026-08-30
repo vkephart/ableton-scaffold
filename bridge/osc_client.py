@@ -95,6 +95,26 @@ class OscClient:
         result = self.query("/live/song/get/tempo", "/live/song/get/tempo")
         return result[0] if result else None
 
+    def get_time_signature(self):
+        """Return the song's global time signature as (numerator, denominator).
+
+        Stock AbletonOSC exposes both as song properties. Unlike AbletonMCP's
+        get_session_info, which CLAUDE.md flags as unreliable, these read straight off
+        the Live song object.
+
+        This is the *global* signature only. Live's arrangement can carry time-signature
+        changes, and no OSC address exposes them, so a caller deriving bar numbers from
+        this value is assuming one meter for the whole song. Returns None if either
+        half does not come back.
+        """
+        num = self.query("/live/song/get/signature_numerator",
+                         "/live/song/get/signature_numerator")
+        den = self.query("/live/song/get/signature_denominator",
+                         "/live/song/get/signature_denominator")
+        if not num or not den:
+            return None
+        return int(num[0]), int(den[0])
+
     def get_track_names(self):
         """Return list of (index, name) for all tracks."""
         result = self.query("/live/song/get/track_names", "/live/song/get/track_names")

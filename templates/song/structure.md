@@ -7,16 +7,17 @@ whenever anything sits off the barline.
 
 ## Section map
 
+One row per section, in play order. The song's own form goes here; nothing is prefilled,
+because a section this song does not have would sit in the table as an empty row and read
+as an unverified gap rather than as absent.
+
+**This table is canonical for section names.** `harmony.md` and `lyrics.md` name their
+sections by matching it exactly. When a section is renamed here, rename it there in the
+same pass, or the three files stop lining up and nothing announces it.
+
 | Section | Start beat | Bars | Time | Energy | Notes |
 |---|---|---|---|---|---|
-| Intro | 0 | | 0:00 | | |
-| Verse 1 | | | | | |
-| Pre-Chorus 1 | | | | | |
-| Chorus 1 | | | | | |
-| Verse 2 | | | | | |
-| Chorus 2 | | | | | |
-| Bridge | | | | | |
-| Outro | | | | | |
+| <Section> | 0 | | 0:00 | | |
 | END | | | | | |
 
 ## Pickup
