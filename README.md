@@ -94,7 +94,7 @@ export ABLETON_SONGS_DIR=~/music-studio
 Full steps are in `SETUP.md`. The short version:
 
 ```bash
-git clone <this-repo> ~/music-studio/ableton-scaffold
+git clone git@github.com:vkephart/ableton-scaffold.git ~/music-studio/ableton-scaffold
 cd ~/music-studio/ableton-scaffold
 pip3 install --break-system-packages -r bridge/requirements.txt
 export ABLETON_SONGS_DIR=~/music-studio
