@@ -37,9 +37,12 @@ DEFAULT_TIMEOUT = 10.0
 
 def mcp_call(tool_name, args):
     """Send a single tool call to AbletonMCP and return the result."""
+    # AbletonMCP's remote script reads {"type": <command>, "params": {...}}. An earlier
+    # version of this file sent {"tool", "arguments"}, which the script ignores without
+    # replying, so every push hung for the full timeout and then failed.
     payload = json.dumps({
-        "tool": tool_name,
-        "arguments": args
+        "type": tool_name,
+        "params": args
     }) + "\n"
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -47,14 +50,19 @@ def mcp_call(tool_name, args):
     try:
         sock.connect((ABLETON_MCP_HOST, ABLETON_MCP_PORT))
         sock.sendall(payload.encode("utf-8"))
+        # The script replies with one JSON object and no newline terminator, so
+        # waiting for "\n" hangs until the socket timeout. Parse as data arrives
+        # and stop as soon as the buffer is a complete JSON document.
         response = b""
         while True:
             chunk = sock.recv(4096)
             if not chunk:
                 break
             response += chunk
-            if response.endswith(b"\n"):
-                break
+            try:
+                return json.loads(response.decode("utf-8"))
+            except ValueError:
+                continue
         return json.loads(response.decode("utf-8"))
     except ConnectionRefusedError:
         print(f"ERROR: Cannot connect to AbletonMCP on port {ABLETON_MCP_PORT}.")
