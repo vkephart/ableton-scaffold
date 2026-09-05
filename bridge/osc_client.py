@@ -184,6 +184,66 @@ class OscClient:
         # Reply is (track_index, device_index, param_index, value_string).
         return result[3] if result and len(result) > 3 else None
 
+    # ----------------------------------------------------------------
+    # Return tracks, via abletonosc-ext/return_track.py
+    #
+    # Return tracks are not in song.tracks, so none of the /live/track or
+    # /live/device addresses can reach them. These mirror the device helpers
+    # above with the same reply-prefix stripping (return_index, then device_index).
+    # ----------------------------------------------------------------
+
+    def get_return_names(self):
+        """Return list of (index, name) for all return tracks."""
+        result = self.query("/live/return/get/names", "/live/return/get/names")
+        return list(enumerate(result)) if result else []
+
+    def _return_query(self, address, return_index):
+        result = self.query(address, address, return_index)
+        return result[1:] if result else []
+
+    def _return_device_query(self, address, return_index, device_index):
+        result = self.query(address, address, return_index, device_index)
+        return result[2:] if result else []
+
+    def get_return_device_names(self, return_index):
+        return self._return_query("/live/return/get/devices/name", return_index)
+
+    def get_return_device_param_names(self, return_index, device_index):
+        return self._return_device_query("/live/return/get/device/parameters/name",
+                                         return_index, device_index)
+
+    def get_return_device_param_values(self, return_index, device_index):
+        return self._return_device_query("/live/return/get/device/parameters/value",
+                                         return_index, device_index)
+
+    def get_return_device_param_min(self, return_index, device_index):
+        return self._return_device_query("/live/return/get/device/parameters/min",
+                                         return_index, device_index)
+
+    def get_return_device_param_max(self, return_index, device_index):
+        return self._return_device_query("/live/return/get/device/parameters/max",
+                                         return_index, device_index)
+
+    def get_return_device_param_value_string(self, return_index, device_index, param_index):
+        result = self.query("/live/return/get/device/parameter/value_string",
+                            "/live/return/get/device/parameter/value_string",
+                            return_index, device_index, int(param_index))
+        return result[3] if result and len(result) > 3 else None
+
+    def set_return_device_param(self, return_index, device_index, param_index, raw_value):
+        """Set one return device parameter to a raw value.
+
+        Returns (raw_after, ui_string, status) where status is "ok" or "refused".
+        The handler refuses out-of-range values instead of letting Live clamp them.
+        """
+        result = self.query("/live/return/set/device/parameter/value",
+                            "/live/return/set/device/parameter/value",
+                            return_index, device_index, int(param_index), float(raw_value))
+        # Reply is (return_index, device_index, param_index, value, value_string, status).
+        if result and len(result) >= 6:
+            return result[3], result[4], result[5]
+        return None, None, "no reply"
+
 
 def check_connection():
     """Quick connectivity test. Returns True on success."""

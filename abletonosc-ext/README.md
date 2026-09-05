@@ -39,7 +39,7 @@ replaces rather than stacking duplicates.
 
 ## return_track.py
 
-Read-only access to return tracks.
+Read and set access to return tracks.
 
 Stock AbletonOSC cannot see them at all. `song.py` exposes only `create_return_track` and
 `delete_return_track`, and return tracks do not appear in `song.tracks`, so
@@ -57,8 +57,15 @@ are undocumentable without this.
 | `/live/return/get/device/parameters/name <return> <device>` | parameter names |
 | `/live/return/get/device/parameters/value <return> <device>` | raw values |
 | `/live/return/get/device/parameter/value_string <return> <device> <param>` | UI display string |
+| `/live/return/get/device/parameters/min <return> <device>` | raw minimums |
+| `/live/return/get/device/parameters/max <return> <device>` | raw maximums |
+| `/live/return/set/device/parameter/value <return> <device> <param> <raw>` | `(value, display string, "ok" or "refused")` |
 
-Every handler here is a getter. Nothing in the module can add, remove or modify a return.
+One writer, `set/device/parameter/value`. It takes a raw Live API value, never UI units,
+checks it against the parameter's own min and max, and refuses rather than lets Live clamp
+silently, because a clamped write hides a wrong scale. The reply carries the display string
+so the caller verifies in the same round trip. Nothing in the module can add, remove or
+rename a return. `bridge/device.py` uses all of this when `--track` names a return.
 
 Count the returns before trusting any prior documentation of them. Return tracks are
 easy to add and rename mid-session, and a stale list of them is the kind of error that
@@ -72,3 +79,7 @@ AbletonOSC update can only ever conflict on those two registrations.
 
 **Adding a handler class requires a full Ableton restart**, not `/live/api/reload` and not
 a control surface toggle. SETUP.md §3 explains why, and how to tell that it has happened.
+**Changing a module whose class is already registered does not.** Copy the file in and
+send `/live/api/reload`: `reload_imports()` reloads every module, then clears and re-runs
+`init_api()`, so new addresses in an existing handler register on the spot. Confirm with a
+read of one of the new addresses before trusting it.

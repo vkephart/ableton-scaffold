@@ -28,12 +28,19 @@ python3 bridge/device.py --track "<Track>" --device "<Device>" --list-params
 
 # Snapshot a whole chain into the song's chain/ folder, in UI units
 python3 bridge/device.py --track "<Track>" --snapshot --song <name>
+
+# Return tracks work the same way: give the return's name as --track
+python3 bridge/device.py --track "A-Reverb" --device "<Device>" --list-params
+python3 bridge/device.py --track "A-Reverb" --snapshot --song <name>   # chain/return-a-reverb.md
 ```
 
 ## Notes
 
 - Track and device names are case-sensitive. A fuzzy substring fallback exists and reports
   when it fires, so read that line rather than assuming an exact match.
+- `--track` resolves regular tracks first, then return tracks, through the
+  `abletonosc-ext` return handler. Without that handler installed, returns are invisible
+  and the command reports the name as not found.
 - Run `--list-params` on an unfamiliar device before setting anything by name.
 - **UI units come from the device itself** through Live's `str_for_value`, so they match
   the plugin display exactly.

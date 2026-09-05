@@ -3,14 +3,17 @@ from .handler import AbletonOSCHandler
 
 class ReturnTrackHandler(AbletonOSCHandler):
     """
-    Read-only access to return tracks.
+    Access to return tracks.
 
     Stock AbletonOSC cannot see return tracks at all. song.py exposes only
     create_return_track and delete_return_track, and return tracks do not appear
     in song.tracks, so /live/song/get/track_names and every track-scoped handler
-    skip them entirely, leaving a session's return tracks undocumentable.
+    skip them entirely, leaving a session's return tracks undocumentable and their
+    devices unsettable.
 
-    Everything here is a getter. Nothing in this module can modify the set.
+    Everything here is a getter except set/device/parameter/value, which writes one
+    device parameter and replies with the value the device then displays. Nothing
+    here can add, remove or rename a return.
     """
 
     def __init__(self, manager):
@@ -69,6 +72,45 @@ class ReturnTrackHandler(AbletonOSCHandler):
             device = return_track.devices[device_index]
             return (device_index, *[p.value for p in device.parameters])
 
+        def return_get_device_parameter_min(return_track, params: Tuple[Any] = ()) -> Tuple:
+            device_index = int(params[0])
+            if device_index < 0 or device_index >= len(return_track.devices):
+                return ()
+            device = return_track.devices[device_index]
+            return (device_index, *[p.min for p in device.parameters])
+
+        def return_get_device_parameter_max(return_track, params: Tuple[Any] = ()) -> Tuple:
+            device_index = int(params[0])
+            if device_index < 0 or device_index >= len(return_track.devices):
+                return ()
+            device = return_track.devices[device_index]
+            return (device_index, *[p.max for p in device.parameters])
+
+        def return_set_device_parameter_value(return_track, params: Tuple[Any] = ()) -> Tuple:
+            #--------------------------------------------------------------------------------
+            # The one writer in this module. Takes a raw Live API value, never UI units,
+            # because raw scales are per-parameter and no conversion table is trustworthy.
+            # Replies with the value read back and the device's display string, so the
+            # caller verifies in the same round trip. Out-of-range values are refused
+            # rather than clamped: Live clamps silently, which hides a wrong scale.
+            #--------------------------------------------------------------------------------
+            device_index, param_index = int(params[0]), int(params[1])
+            if device_index < 0 or device_index >= len(return_track.devices):
+                return ()
+            device = return_track.devices[device_index]
+            if param_index < 0 or param_index >= len(device.parameters):
+                return ()
+            param = device.parameters[param_index]
+            value = float(params[2])
+            if value < param.min or value > param.max:
+                self.logger.warning("Return device parameter %s: %s outside [%s, %s], refused" %
+                                    (param.name, value, param.min, param.max))
+                return (device_index, param_index, param.value,
+                        param.str_for_value(param.value), "refused")
+            param.value = value
+            return (device_index, param_index, param.value,
+                    param.str_for_value(param.value), "ok")
+
         def return_get_device_parameter_value_string(return_track, params: Tuple[Any] = ()) -> Tuple:
             #--------------------------------------------------------------------------------
             # str_for_value gives the plugin's own display string, which is the only
@@ -99,3 +141,9 @@ class ReturnTrackHandler(AbletonOSCHandler):
                                     create_return_callback(return_get_device_parameter_values))
         self.osc_server.add_handler("/live/return/get/device/parameter/value_string",
                                     create_return_callback(return_get_device_parameter_value_string))
+        self.osc_server.add_handler("/live/return/get/device/parameters/min",
+                                    create_return_callback(return_get_device_parameter_min))
+        self.osc_server.add_handler("/live/return/get/device/parameters/max",
+                                    create_return_callback(return_get_device_parameter_max))
+        self.osc_server.add_handler("/live/return/set/device/parameter/value",
+                                    create_return_callback(return_set_device_parameter_value))

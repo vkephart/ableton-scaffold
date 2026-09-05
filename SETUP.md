@@ -117,6 +117,11 @@ In `manager.py`, add both to the `self.handlers` list in `init_api()`, and to
 Keeping each handler in its own module means no stock file is rewritten, so an upstream
 update can only ever conflict on those two registrations.
 
+**Updating a module that is already registered** needs no restart: copy the new file over
+the installed one and send `/live/api/reload`. The manager reloads every module and re-runs
+`init_api()`, so new addresses appear immediately. Verify with one read before relying on
+it.
+
 ### Live 11 embeds CPython 3.7
 
 Any 3.8+ syntax (walrus, positional-only parameters, builtin generics like `list[int]`,

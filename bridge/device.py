@@ -19,6 +19,9 @@ reads and snapshots, never for a whole-session pull.
 
 Notes:
   - Track names are case-sensitive and must match Ableton exactly.
+  - --track also accepts a return track name. Regular tracks are searched first, then
+    returns, through the abletonosc-ext return handler. Everything below works the same
+    on either; the snapshot file name carries a "return-" prefix so the two never collide.
   - --snapshot writes to <songs-dir>/<song>/chain/<track-slug>.md. The songs directory
     is resolved by bridge/songpath.py: --songs-dir, then $ABLETON_SONGS_DIR, then
     ./songs, then <bridge-repo>/songs.
@@ -42,21 +45,97 @@ def slugify(name):
     return name.strip("-")
 
 
-def resolve_track(client, track_name):
-    track_names = client.get_track_names()
-    for idx, name in track_names:
-        if name == track_name:
-            return idx
-    # Fuzzy fallback
-    for idx, name in track_names:
-        if track_name.lower() in name.lower():
+class Target:
+    """A regular track or a return track, behind one interface.
+
+    Return tracks live outside song.tracks, so AbletonOSC reaches them through a
+    different address family. Everything in this file that reads or writes a device
+    goes through here so it does not have to know which family it is talking to.
+    """
+
+    def __init__(self, client, kind, index, name):
+        self.client = client
+        self.kind = kind          # "track" or "return"
+        self.index = index
+        self.name = name
+
+    @property
+    def label(self):
+        return "return '%s'" % self.name if self.kind == "return" else "track '%s'" % self.name
+
+    def device_names(self):
+        if self.kind == "return":
+            return self.client.get_return_device_names(self.index)
+        return self.client.get_device_names(self.index)
+
+    def param_names(self, di):
+        if self.kind == "return":
+            return self.client.get_return_device_param_names(self.index, di)
+        return self.client.get_device_param_names(self.index, di)
+
+    def param_values(self, di):
+        if self.kind == "return":
+            return self.client.get_return_device_param_values(self.index, di)
+        return self.client.get_device_param_values(self.index, di)
+
+    def param_min(self, di):
+        if self.kind == "return":
+            return self.client.get_return_device_param_min(self.index, di)
+        return self.client.get_device_param_min(self.index, di)
+
+    def param_max(self, di):
+        if self.kind == "return":
+            return self.client.get_return_device_param_max(self.index, di)
+        return self.client.get_device_param_max(self.index, di)
+
+    def value_string(self, di, pi):
+        if self.kind == "return":
+            return self.client.get_return_device_param_value_string(self.index, di, pi)
+        return self.client.get_device_param_value_string(self.index, di, pi)
+
+    def set_param(self, di, pi, raw):
+        """Write a raw value and return the display string afterwards."""
+        if self.kind == "return":
+            _, ui, status = self.client.set_return_device_param(self.index, di, pi, raw)
+            if status != "ok":
+                print(f"  handler reported: {status}")
+            return ui
+        self.client.send("/live/device/set/parameter/value", self.index, di, pi, raw)
+        time.sleep(0.1)  # let Live apply the change before reading it back
+        return self.client.get_device_param_value_string(self.index, di, pi)
+
+
+def _match_name(pairs, wanted):
+    for idx, name in pairs:
+        if name == wanted:
+            return idx, name, False
+    for idx, name in pairs:
+        if wanted.lower() in name.lower():
+            return idx, name, True
+    return None, None, False
+
+
+def resolve_target(client, track_name):
+    """Find a regular track by name, then a return track. Exact match beats fuzzy."""
+    idx, name, fuzzy = _match_name(client.get_track_names(), track_name)
+    if idx is not None:
+        if fuzzy:
             print(f"  (fuzzy match: '{name}' for '{track_name}')")
-            return idx
+        return Target(client, "track", idx, name)
+    try:
+        returns = client.get_return_names()
+    except TimeoutError:
+        returns = []   # extension not installed; returns are simply invisible
+    idx, name, fuzzy = _match_name(returns, track_name)
+    if idx is not None:
+        if fuzzy:
+            print(f"  (fuzzy match: return '{name}' for '{track_name}')")
+        return Target(client, "return", idx, name)
     return None
 
 
-def resolve_device(client, track_index, device_name):
-    device_names = client.get_device_names(track_index)
+def resolve_device(target, device_name):
+    device_names = target.device_names()
     for di, name in enumerate(device_names):
         if name == device_name:
             return di, name
@@ -67,9 +146,9 @@ def resolve_device(client, track_index, device_name):
     return None, None
 
 
-def list_params(client, track_index, device_index, device_name):
-    param_names = client.get_device_param_names(track_index, device_index)
-    param_values = client.get_device_param_values(track_index, device_index)
+def list_params(target, device_index, device_name):
+    param_names = target.param_names(device_index)
+    param_values = target.param_values(device_index)
     if not param_names:
         print("No parameters returned.")
         return
@@ -77,16 +156,16 @@ def list_params(client, track_index, device_index, device_name):
     print(f"{'#':>4}  {'Parameter':<40}  {'Raw':>10}  UI value")
     print("-" * 78)
     for i, (name, raw) in enumerate(zip(param_names, param_values)):
-        ui = client.get_device_param_value_string(track_index, device_index, i)
+        ui = target.value_string(device_index, i)
         print(f"{i:>4}  {name:<40}  {raw:>10.4f}  {ui if ui is not None else ''}")
 
 
-def get_param(client, track_index, device_index, device_name, param_name):
-    param_names = client.get_device_param_names(track_index, device_index)
-    param_values = client.get_device_param_values(track_index, device_index)
+def get_param(target, device_index, device_name, param_name):
+    param_names = target.param_names(device_index)
+    param_values = target.param_values(device_index)
     for pi, (pname, pval) in enumerate(zip(param_names, param_values)):
         if pname.lower() == param_name.lower() or param_name.lower() in pname.lower():
-            ui = client.get_device_param_value_string(track_index, device_index, pi)
+            ui = target.value_string(device_index, pi)
             ui_part = f"  ({ui})" if ui is not None else ""
             print(f"{pname}: {pval:.4f} raw{ui_part}")
             return pval, pname
@@ -94,7 +173,7 @@ def get_param(client, track_index, device_index, device_name, param_name):
     return None, None
 
 
-def set_param(client, track_index, device_index, device_name, param_name, value):
+def set_param(target, device_index, device_name, param_name, value):
     """Set a parameter to a raw Live API value, range-checked, and verify the result.
 
     The value is raw, not UI units. There is no reliable UI-to-raw conversion: each
@@ -102,14 +181,14 @@ def set_param(client, track_index, device_index, device_name, param_name, value)
     min/max. Live silently clamps out-of-range writes, so this refuses them instead,
     then reads the value back and prints what the plugin actually displays.
     """
-    param_names = client.get_device_param_names(track_index, device_index)
+    param_names = target.param_names(device_index)
     for pi, pname in enumerate(param_names):
         if pname.lower() == param_name.lower() or param_name.lower() in pname.lower():
             raw = float(value)
 
-            mins = client.get_device_param_min(track_index, device_index)
-            maxes = client.get_device_param_max(track_index, device_index)
-            before = client.get_device_param_value_string(track_index, device_index, pi)
+            mins = target.param_min(device_index)
+            maxes = target.param_max(device_index)
+            before = target.value_string(device_index, pi)
 
             if pi < len(mins) and pi < len(maxes):
                 pmin, pmax = mins[pi], maxes[pi]
@@ -119,9 +198,7 @@ def set_param(client, track_index, device_index, device_name, param_name, value)
                     print("  Pass a raw value in that range; --list-params shows raw and UI side by side.")
                     return
 
-            client.send("/live/device/set/parameter/value", track_index, device_index, pi, raw)
-            time.sleep(0.1)  # let Live apply the change before reading it back
-            after = client.get_device_param_value_string(track_index, device_index, pi)
+            after = target.set_param(device_index, pi, raw)
 
             print(f"Set {pname}: {before} → {after}   (raw {raw:.4f})")
             if before == after:
@@ -131,19 +208,21 @@ def set_param(client, track_index, device_index, device_name, param_name, value)
     print(f"Parameter '{param_name}' not found on {device_name}.")
 
 
-def snapshot(client, track_index, track_name, song, songs_dir=None):
+def snapshot(target, song, songs_dir=None):
     song_dir = resolve_song_dir(song, songs_dir)
     chain_dir = os.path.join(song_dir, "chain")
     os.makedirs(chain_dir, exist_ok=True)
-    path = os.path.join(chain_dir, f"{slugify(track_name)}.md")
+    prefix = "return-" if target.kind == "return" else ""
+    path = os.path.join(chain_dir, f"{prefix}{slugify(target.name)}.md")
+    track_name = target.name
 
-    device_names = client.get_device_names(track_index)
+    device_names = target.device_names()
     if not device_names:
         print("No devices found.")
         return
 
     lines = [
-        f"# {track_name} — device chain",
+        f"# {track_name}: device chain" + (" (return track)" if target.kind == "return" else ""),
         f"",
         f"Pulled: {time.strftime('%Y-%m-%d')}",
         f"",
@@ -156,13 +235,13 @@ def snapshot(client, track_index, track_name, song, songs_dir=None):
     for di, dname in enumerate(device_names):
         lines.append(f"## {di + 1}. {dname}")
         lines.append("")
-        param_names = client.get_device_param_names(track_index, di)
-        param_values = client.get_device_param_values(track_index, di)
+        param_names = target.param_names(di)
+        param_values = target.param_values(di)
         if param_names and param_values:
             lines.append("| Parameter | Raw | UI value |")
             lines.append("|-----------|-----|----------|")
             for pi, (pname, pval) in enumerate(zip(param_names, param_values)):
-                ui = client.get_device_param_value_string(track_index, di, pi)
+                ui = target.value_string(di, pi)
                 lines.append(f"| {pname} | {pval:.4f} | {ui if ui is not None else ''} |")
         else:
             lines.append("*(no params returned)*")
@@ -175,7 +254,9 @@ def snapshot(client, track_index, track_name, song, songs_dir=None):
 
 def main():
     parser = argparse.ArgumentParser(description="Read/set AbletonOSC device parameters")
-    parser.add_argument("--track", required=True, help="Track name (case-sensitive)")
+    parser.add_argument("--track", required=True,
+                        help="Track or return track name (case-sensitive). Tracks are "
+                             "searched first, then returns.")
     parser.add_argument("--device", help="Device name (case-sensitive)")
     parser.add_argument("--param", help="Parameter name")
     parser.add_argument("--set", metavar="VALUE",
@@ -190,9 +271,10 @@ def main():
     client = OscClient()
 
     try:
-        track_index = resolve_track(client, args.track)
-        if track_index is None:
-            print(f"ERROR: Track '{args.track}' not found. Check spelling (case-sensitive).")
+        target = resolve_target(client, args.track)
+        if target is None:
+            print(f"ERROR: Track '{args.track}' not found among tracks or returns. "
+                  "Check spelling (case-sensitive).")
             sys.exit(1)
 
         if args.snapshot:
@@ -200,7 +282,7 @@ def main():
                 print("ERROR: --snapshot requires --song")
                 sys.exit(1)
             try:
-                snapshot(client, track_index, args.track, args.song, args.songs_dir)
+                snapshot(target, args.song, args.songs_dir)
             except SongPathError as e:
                 print(f"ERROR: {e}")
                 sys.exit(1)
@@ -210,21 +292,21 @@ def main():
             print("ERROR: --device is required for param operations.")
             sys.exit(1)
 
-        device_index, device_name = resolve_device(client, track_index, args.device)
+        device_index, device_name = resolve_device(target, args.device)
         if device_index is None:
-            print(f"ERROR: Device '{args.device}' not found on '{args.track}'.")
+            print(f"ERROR: Device '{args.device}' not found on {target.label}.")
             sys.exit(1)
 
         if args.list_params:
-            list_params(client, track_index, device_index, device_name)
+            list_params(target, device_index, device_name)
             return
 
         if args.param and args.set is not None:
-            set_param(client, track_index, device_index, device_name, args.param, args.set)
+            set_param(target, device_index, device_name, args.param, args.set)
         elif args.param:
-            get_param(client, track_index, device_index, device_name, args.param)
+            get_param(target, device_index, device_name, args.param)
         else:
-            list_params(client, track_index, device_index, device_name)
+            list_params(target, device_index, device_name)
 
     finally:
         client.close()

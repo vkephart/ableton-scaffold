@@ -140,7 +140,7 @@ measurement**, because nobody can reproduce it.
 |---|---|
 | Per-track output levels over time | Available via OSC: `output_meter_level`, `output_meter_left`, `output_meter_right`. Needs the transport running. Good for balance and section dynamics, not spectral content. |
 | Device parameter snapshot in UI units | Available: `bridge/device.py --track "<name>" --snapshot --song <name>` |
-| Return track inventory and parameters | Available, with the `return_track.py` handler from `abletonosc-ext/`. Stock AbletonOSC cannot see returns at all. |
+| Return track inventory, parameters, and parameter writes | Available, with the `return_track.py` handler from `abletonosc-ext/`. Stock AbletonOSC cannot see returns at all. `bridge/device.py --track "<return name>"` reads, sets and snapshots them like any track. |
 | Spectrograph image | Manual. Screenshot the analyzer into `mix/`. No plugin exposes its spectrum over OSC. |
 | Offline FFT from stems | Needs numpy and soundfile installed. Only worth it if screenshots prove insufficient. |
 
@@ -154,5 +154,7 @@ stale list survives for a long time because nothing contradicts it. Assumed list
 wrong by three entries, including one return documented as a reverb that was a delay.
 
 Stock AbletonOSC cannot see return tracks. With `abletonosc-ext/return_track.py` applied,
-`/live/return/get/names` and the device getters under `/live/return/` read them, and the
-inventory belongs in the track repo's `returns.md`.
+`/live/return/get/names` and the device getters under `/live/return/` read them,
+`/live/return/set/device/parameter/value` writes one parameter with a range check, and the
+inventory belongs in the track repo's `returns.md`. Set return devices through
+`bridge/device.py` with the return's name as `--track`, never by guessing a raw scale.
