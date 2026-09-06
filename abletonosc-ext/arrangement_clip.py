@@ -26,6 +26,67 @@ class ArrangementClipHandler(AbletonOSCHandler):
         self.class_identifier = "arrangement_clip"
 
     def init_api(self):
+        #--------------------------------------------------------------------------------
+        # Clip automation envelopes on Session clips. Lives in this module rather than a
+        # new handler class because adding a class needs an Ableton restart; a module
+        # reload picks these up. Live's API: clip.automation_envelope(parameter) returns
+        # the envelope or None, clip.create_automation_envelope(parameter) makes one,
+        # envelope.insert_step(time, length, value) writes a flat segment. A ramp is
+        # many short steps, which the client supplies as (time, value) pairs.
+        #--------------------------------------------------------------------------------
+        def _session_clip(track_index, slot_index):
+            slot = self.song.tracks[track_index].clip_slots[slot_index]
+            return slot.clip if slot.has_clip else None
+
+        def _write_envelope(clip, parameter, points):
+            #--------------------------------------------------------------------------------
+            # points: flat (time, value, time, value, ...). Each value holds from its time
+            # until the next time; the last holds to the end of the clip.
+            #--------------------------------------------------------------------------------
+            clip.clear_envelope(parameter)
+            env = clip.automation_envelope(parameter)
+            if env is None:
+                env = clip.create_automation_envelope(parameter)
+            times = [float(points[i]) for i in range(0, len(points), 2)]
+            values = [float(points[i]) for i in range(1, len(points), 2)]
+            n = min(len(times), len(values))
+            for i in range(n):
+                end = times[i + 1] if i + 1 < n else clip.length
+                length = end - times[i]
+                if length > 0:
+                    env.insert_step(times[i], length, values[i])
+            return n
+
+        def clip_set_envelope_send(params):
+            track_index, slot_index, send_index = int(params[0]), int(params[1]), int(params[2])
+            clip = _session_clip(track_index, slot_index)
+            if clip is None:
+                return (track_index, slot_index, send_index, 0)
+            parameter = self.song.tracks[track_index].mixer_device.sends[send_index]
+            n = _write_envelope(clip, parameter, params[3:])
+            return (track_index, slot_index, send_index, n)
+
+        def clip_set_envelope_param(params):
+            track_index, slot_index = int(params[0]), int(params[1])
+            device_index, param_index = int(params[2]), int(params[3])
+            clip = _session_clip(track_index, slot_index)
+            if clip is None:
+                return (track_index, slot_index, device_index, param_index, 0)
+            parameter = self.song.tracks[track_index].devices[device_index].parameters[param_index]
+            n = _write_envelope(clip, parameter, params[4:])
+            return (track_index, slot_index, device_index, param_index, n)
+
+        def clip_clear_envelope_send(params):
+            track_index, slot_index, send_index = int(params[0]), int(params[1]), int(params[2])
+            clip = _session_clip(track_index, slot_index)
+            if clip is not None:
+                clip.clear_envelope(self.song.tracks[track_index].mixer_device.sends[send_index])
+            return (track_index, slot_index, send_index)
+
+        self.osc_server.add_handler("/live/clip/set/envelope/send", clip_set_envelope_send)
+        self.osc_server.add_handler("/live/clip/set/envelope/param", clip_set_envelope_param)
+        self.osc_server.add_handler("/live/clip/clear/envelope/send", clip_clear_envelope_send)
+
         def find_clip_by_start_time(track_index: int, clip_start_time: float):
             track = self.song.tracks[track_index]
             for clip in track.arrangement_clips:

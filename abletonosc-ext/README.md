@@ -37,6 +37,23 @@ which is the truthful answer: such tracks hold no arrangement clips.
 `set/notes` clears the clip's full pitch and time range before writing, so a repeated push
 replaces rather than stacking duplicates.
 
+### Clip envelopes (Session clips), in the same module
+
+Stock AbletonOSC cannot write automation. These live in `arrangement_clip.py` only because
+adding a module reloads in place and adding a class needs an Ableton restart.
+
+| Address | Does |
+|---|---|
+| `/live/clip/set/envelope/send <track> <slot> <send> <t0> <v0> <t1> <v1> ...` | replaces the clip's envelope for that send with flat steps; each value holds until the next time, the last to clip end |
+| `/live/clip/set/envelope/param <track> <slot> <device> <param> <t0> <v0> ...` | same for a device parameter |
+| `/live/clip/clear/envelope/send <track> <slot> <send>` | removes that send envelope |
+
+Times are beats from clip start, values raw (sends 0 to 1). A ramp is many short steps;
+two-beat steps read as a ramp at any normal tempo. The reply echoes the addressing and
+the number of points written. There is no getter; check the envelope in the clip view.
+The envelope is on the Session clip, so it travels with the clip when dragged to the
+Arrangement.
+
 ## return_track.py
 
 Read and set access to return tracks.
