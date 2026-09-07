@@ -141,8 +141,9 @@ measurement**, because nobody can reproduce it.
 | Per-track output levels over time | Available via OSC: `output_meter_level`, `output_meter_left`, `output_meter_right`. Needs the transport running. Good for balance and section dynamics, not spectral content. |
 | Device parameter snapshot in UI units | Available: `bridge/device.py --track "<name>" --snapshot --song <name>` |
 | Return track inventory, parameters, and parameter writes | Available, with the `return_track.py` handler from `abletonosc-ext/`. Stock AbletonOSC cannot see returns at all. `bridge/device.py --track "<return name>"` reads, sets and snapshots them like any track. |
-| Spectrograph image | Manual. Screenshot the analyzer into `mix/`. No plugin exposes its spectrum over OSC. |
-| Offline FFT from stems | Needs numpy and soundfile installed. Only worth it if screenshots prove insufficient. |
+| Spectrograph image | No plugin exposes its spectrum over OSC. Either screenshot an analyzer into `mix/`, or bounce with `bridge/capture.py` and render with `bridge/spectrum.py --png`, which pins the analyzer settings in the image title. |
+| Offline FFT from a bounce | `bridge/capture.py` records any track or the master through a temporary resample track while the set plays; `bridge/spectrum.py` reads levels, stereo correlation, band powers, peaks and modulation. Needs numpy, scipy, soundfile, matplotlib. |
+| Plugin panel read | Screenshot with `screencapture -x` and crop; a scripted click on a track title opens the device view, but clicks inside a plugin window do not register through System Events, so the plugin window and its sub-panels have to be opened by hand. |
 
 **Do not claim a spectral reading you did not take.** If the only evidence is a parameter
 value, say that is what it is.

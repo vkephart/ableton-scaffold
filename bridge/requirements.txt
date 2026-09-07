@@ -1,2 +1,7 @@
 python-osc>=1.8.0
 pyyaml>=6.0
+# optional, for bridge/spectrum.py only:
+# numpy
+# scipy
+# soundfile
+# matplotlib

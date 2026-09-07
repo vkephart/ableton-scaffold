@@ -93,6 +93,37 @@ the more reliable of the two. The clip lands in a Session slot; drag it to the A
 at the right bar yourself. Unfreeze the target track first, because frozen tracks fail
 silently on `create_clip`.
 
+### capture.py
+
+Records a track's output, or the master, to an audio file through a temporary resample
+track, so a plugin that publishes nothing over OSC can still be measured. The transport
+must already be playing with the clips to capture running; the script retriggers nothing.
+Recording starts at the next launch-quantize boundary and runs for `--beats` plus a bar.
+The temporary track has monitoring Off before it is armed, so nothing doubles into the
+master, and it is deleted afterwards. Several sources record simultaneously and come out
+sample-aligned.
+
+```bash
+python3 bridge/capture.py --source Pads --beats 96 --out /tmp/pad.aif
+python3 bridge/capture.py --source Pads --source master --beats 96 --out /tmp/pad.aif --out /tmp/mix.aif
+python3 bridge/capture.py --source Pads --channel "Post FX" --beats 96 --out /tmp/pad-prefader.aif
+```
+
+Prints a JSON line with the mixer state at capture time; paste the relevant faders into
+the readings entry, because they are one of the five variables a capture has to pin.
+
+### spectrum.py
+
+Offline reading of a capture: levels, stereo correlation per band, band powers, centroid,
+strongest peaks, brightness and level variation over time, and with `--track-partial` the
+pitch and amplitude modulation of one partial. `--png` writes a spectrogram plus long-term
+average spectrum for `mix/`. Needs `numpy scipy soundfile matplotlib`, listed as optional
+in `requirements.txt`.
+
+```bash
+python3 bridge/spectrum.py /tmp/pad.aif --against /tmp/mix.aif --track-partial 440 --png mix/<name>-before.png
+```
+
 ### device.py
 
 Reads and sets device parameters by name, and snapshots a whole chain.
