@@ -54,6 +54,65 @@ the number of points written. There is no getter; check the envelope in the clip
 The envelope is on the Session clip, so it travels with the clip when dragged to the
 Arrangement.
 
+### Locators (cue points), in the same module
+
+Stock AbletonOSC reads locators (`/live/song/get/cue_points`) and jumps to them, but cannot
+make, name or remove one. Added 2026-10-04.
+
+| Address | Does |
+|---|---|
+| `/live/song/cue_point/add <beat> <name>` | makes a locator at the playhead, which must already sit on `<beat>`; a locator already there is left alone |
+| `/live/song/cue_point/set/name <beat> <name>` | names the locator at that beat, where Live allows it |
+| `/live/song/cue_point/delete <beat>` | removes the locator at that beat; the playhead must sit on it |
+
+Each refuses while the transport plays. Replies echo the beat (and name) and a status.
+Three Live 11.3 facts shaped this, all found by testing on 2026-10-04:
+
+- **Locator names are read-only from a script.** `CuePoint.name` raises "can't set
+  attribute", so locators come out numbered in time order and are renamed by hand
+  (select, Cmd+R). The handlers try the name anyway and say when it did not take.
+- **Moving the playhead does not land inside the same call.** Setting `current_song_time`
+  and toggling the cue in one handler put the locator at the old playhead. So the client
+  sends the stock `/live/song/set/current_song_time`, waits about half a second, reads the
+  playhead back, then calls `add`.
+- **The playhead cannot pass the song end, and the song end follows the playhead.** Live
+  refuses a `current_song_time` beyond `song_length`, which sits a little past the furthest
+  of the last clip, the last locator and the playhead. To place locators past the last clip,
+  walk the playhead forward in steps of about 12 beats, rereading `song_length` each step,
+  and add the locators in time order.
+
+### Arrangement layout, in the same module
+
+Added 2026-10-04 to lay a whole song out from its loop clips. Live 11.3 exposes
+`Track.duplicate_clip_to_arrangement(clip, time)` and `Track.delete_clip(clip)`; these wrap
+them, addressing Arrangement clips by start time like the note handlers.
+
+| Address | Does |
+|---|---|
+| `/live/arrangement_clip/get/capabilities` | whether this Live has the two methods |
+| `/live/arrangement_clip/get/info <track>` | `(start_time, end_time, name)` per clip; `end_time`, not `length`, which is the loop on a looped clip |
+| `/live/arrangement_clip/duplicate <track> <src_start> <dest>` | copies that clip to `<dest>` on the same track; replies with the new start and end |
+| `/live/clip_slot/duplicate_to_arrangement <track> <slot> <dest>` | copies a Session clip onto the timeline (one loop length) |
+| `/live/arrangement_clip/delete <track> <start>` | deletes that clip |
+| `/live/arrangement_clip/set/name <track> <start> <name>` | names it |
+
+Found while using them:
+
+- **A copy placed over an existing clip trims the one underneath**, as a paste by hand
+  does. Place left to right and each placement cuts the previous one's tail. To shorten a
+  clip, place a temporary copy where it should end, then delete the temporary one.
+- **There is no trim or split.** A part of a clip comes from a clip split by hand, or from a
+  copy cut short by the trim trick above.
+- **A clip split by hand keeps all its notes**; the split only moves its start marker. Note
+  reads on the second half return the hidden notes before the marker too, so judge a moved
+  piece by its position, not by its first note.
+- **A note read of thousands of notes gets no reply**: the answer is too big for one OSC
+  packet. `/live/clip/get/notes <track> <slot> 0 127 <start> <span>` reads a time window;
+  count in 16-beat windows. The same limit applies to `/live/arrangement_clip/get/notes`.
+- **Long MIDI parts are cleanest as one clip:** build it in a spare Session slot
+  (`create_clip`, then `/live/clip/add/notes` in chunks of about 60 notes), copy it to the
+  Arrangement, and delete the Session clip.
+
 ## return_track.py
 
 Read and set access to return tracks.

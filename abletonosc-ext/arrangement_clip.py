@@ -87,6 +87,77 @@ class ArrangementClipHandler(AbletonOSCHandler):
         self.osc_server.add_handler("/live/clip/set/envelope/param", clip_set_envelope_param)
         self.osc_server.add_handler("/live/clip/clear/envelope/send", clip_clear_envelope_send)
 
+        #--------------------------------------------------------------------------------
+        # Locators (cue points). Stock AbletonOSC can read and jump to them but not make
+        # or name them, and Live's API has no "add a cue at this time": set_or_delete_cue()
+        # toggles a cue at the current song time. Setting current_song_time does not take
+        # effect inside the same call (tested 2026-10-04: a cue toggled straight after the
+        # setter landed at the old playhead), so the client moves the playhead first with
+        # the stock /live/song/set/current_song_time, waits, and then calls these. Each
+        # refuses unless the transport is stopped and the playhead already sits on the
+        # requested time. A cue already at the time is renamed, never toggled off, so
+        # repeating an add is safe. Addressed by time in beats, matched within the clip
+        # tolerance; Live's cue index shifts whenever a cue is added before another.
+        #--------------------------------------------------------------------------------
+        def _cue_at(time):
+            for cue in self.song.cue_points:
+                if abs(cue.time - time) < self.START_TIME_TOLERANCE:
+                    return cue
+            return None
+
+        def _playhead_refusal(time):
+            if self.song.is_playing:
+                return "refused: transport is playing"
+            if abs(self.song.current_song_time - time) >= self.START_TIME_TOLERANCE:
+                return "refused: playhead is at %s, move it to %s first" % (self.song.current_song_time, time)
+            return None
+
+        def cue_point_add(params):
+            time, name = float(params[0]), str(params[1])
+            cue = _cue_at(time)
+            if cue is not None:
+                return (time, name, "exists; " + _try_name(cue, name))
+            refusal = _playhead_refusal(time)
+            if refusal:
+                return (time, name, refusal)
+            self.song.set_or_delete_cue()
+            cue = _cue_at(time)
+            if cue is None:
+                return (time, name, "toggled; check the cue list")
+            return (time, name, "created; " + _try_name(cue, name))
+
+        def _try_name(cue, name):
+            #--------------------------------------------------------------------------------
+            # CuePoint.name is read-only in Live 11.3 (AttributeError "can't set attribute",
+            # 2026-10-04). Kept as a try so a Live version that allows it just works.
+            #--------------------------------------------------------------------------------
+            try:
+                cue.name = name
+                return "named"
+            except AttributeError:
+                return "name is read-only in this Live, rename by hand"
+
+        def cue_point_set_name(params):
+            time, name = float(params[0]), str(params[1])
+            cue = _cue_at(time)
+            if cue is None:
+                return (time, name, "none at that time")
+            return (time, name, _try_name(cue, name))
+
+        def cue_point_delete(params):
+            time = float(params[0])
+            if _cue_at(time) is None:
+                return (time, "none at that time")
+            refusal = _playhead_refusal(time)
+            if refusal:
+                return (time, refusal)
+            self.song.set_or_delete_cue()
+            return (time, "toggled off")
+
+        self.osc_server.add_handler("/live/song/cue_point/add", cue_point_add)
+        self.osc_server.add_handler("/live/song/cue_point/set/name", cue_point_set_name)
+        self.osc_server.add_handler("/live/song/cue_point/delete", cue_point_delete)
+
         def find_clip_by_start_time(track_index: int, clip_start_time: float):
             track = self.song.tracks[track_index]
             for clip in track.arrangement_clips:
@@ -195,3 +266,78 @@ class ArrangementClipHandler(AbletonOSCHandler):
         self.osc_server.add_handler("/live/arrangement_clip/get/clips", arrangement_clip_get_clips)
         self.osc_server.add_handler("/live/arrangement_clip/get/notes", arrangement_clip_get_notes)
         self.osc_server.add_handler("/live/arrangement_clip/set/notes", arrangement_clip_set_notes)
+
+        #--------------------------------------------------------------------------------
+        # Arrangement layout (2026-10-04). Live's Track.duplicate_clip_to_arrangement(clip,
+        # time) copies a Session or Arrangement clip onto the timeline, and
+        # Track.delete_clip(clip) removes one. Both are wrapped here, Arrangement clips
+        # addressed by start time like the note handlers. Each says "unsupported" instead
+        # of raising when this Live lacks the method, so a client can check first.
+        #--------------------------------------------------------------------------------
+        def arrangement_layout_capabilities(params):
+            track = self.song.tracks[0]
+            return (bool(hasattr(track, "duplicate_clip_to_arrangement")), bool(hasattr(track, "delete_clip")))
+
+        def arrangement_clip_get_info(params):
+            #--------------------------------------------------------------------------------
+            # (start_time, end_time, name) per clip. end_time, not length: a looped clip's
+            # length is its loop, while end_time is where it stops on the timeline.
+            #--------------------------------------------------------------------------------
+            track_index = int(params[0])
+            try:
+                clips = list(self.song.tracks[track_index].arrangement_clips)
+            except Exception:
+                clips = []
+            out = [track_index]
+            for clip in clips:
+                out += [clip.start_time, clip.end_time, clip.name]
+            return tuple(out)
+
+        def _duplicate(track, clip, dest):
+            if not hasattr(track, "duplicate_clip_to_arrangement"):
+                return ("unsupported", -1.0, -1.0)
+            new = track.duplicate_clip_to_arrangement(clip, dest)
+            if new is None:
+                return ("ok", -1.0, -1.0)
+            return ("ok", new.start_time, new.end_time)
+
+        def arrangement_clip_duplicate(params):
+            track_index, src_start, dest = int(params[0]), float(params[1]), float(params[2])
+            clip = find_clip_by_start_time(track_index, src_start)
+            if clip is None:
+                return (track_index, src_start, dest, "no clip at that start", -1.0, -1.0)
+            return (track_index, src_start, dest) + _duplicate(self.song.tracks[track_index], clip, dest)
+
+        def clip_slot_duplicate_to_arrangement(params):
+            track_index, slot_index, dest = int(params[0]), int(params[1]), float(params[2])
+            slot = self.song.tracks[track_index].clip_slots[slot_index]
+            if not slot.has_clip:
+                return (track_index, slot_index, dest, "empty slot", -1.0, -1.0)
+            return (track_index, slot_index, dest) + _duplicate(self.song.tracks[track_index], slot.clip, dest)
+
+        def arrangement_clip_delete(params):
+            track_index, start = int(params[0]), float(params[1])
+            track = self.song.tracks[track_index]
+            clip = find_clip_by_start_time(track_index, start)
+            if clip is None:
+                return (track_index, start, "no clip at that start")
+            if not hasattr(track, "delete_clip"):
+                return (track_index, start, "unsupported")
+            track.delete_clip(clip)
+            return (track_index, start, "deleted")
+
+        self.osc_server.add_handler("/live/arrangement_clip/get/capabilities", arrangement_layout_capabilities)
+        self.osc_server.add_handler("/live/arrangement_clip/get/info", arrangement_clip_get_info)
+        self.osc_server.add_handler("/live/arrangement_clip/duplicate", arrangement_clip_duplicate)
+        self.osc_server.add_handler("/live/clip_slot/duplicate_to_arrangement", clip_slot_duplicate_to_arrangement)
+        self.osc_server.add_handler("/live/arrangement_clip/delete", arrangement_clip_delete)
+
+        def arrangement_clip_set_name(params):
+            track_index, start, name = int(params[0]), float(params[1]), str(params[2])
+            clip = find_clip_by_start_time(track_index, start)
+            if clip is None:
+                return (track_index, start, name, "no clip at that start")
+            clip.name = name
+            return (track_index, start, clip.name, "named")
+
+        self.osc_server.add_handler("/live/arrangement_clip/set/name", arrangement_clip_set_name)
