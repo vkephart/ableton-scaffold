@@ -341,3 +341,79 @@ class ArrangementClipHandler(AbletonOSCHandler):
             return (track_index, start, clip.name, "named")
 
         self.osc_server.add_handler("/live/arrangement_clip/set/name", arrangement_clip_set_name)
+
+        #--------------------------------------------------------------------------------
+        # Reversible edits (2026-10-17): mute a whole clip, or mute the notes in a pitch
+        # and time window, instead of deleting anything. Muted clips and notes show greyed
+        # in Live and come back with the 0 key, or with the same call and 0.
+        # Note windows are in clip time, which differs from song time minus start_time
+        # whenever the clip's start marker is not 0 (a clip split or trimmed by hand), so
+        # get/props first and convert: clip time = song beat - start_time + start_marker.
+        #--------------------------------------------------------------------------------
+        def arrangement_clip_get_props(params):
+            track_index, start = int(params[0]), float(params[1])
+            clip = find_clip_by_start_time(track_index, start)
+            if clip is None:
+                return (track_index, start, "no clip at that start")
+            return (track_index, start, clip.start_marker, clip.end_marker, clip.loop_start,
+                    clip.loop_end, bool(clip.looping), clip.length, bool(clip.muted),
+                    bool(clip.is_midi_clip))
+
+        def arrangement_clip_set_muted(params):
+            track_index, start, muted = int(params[0]), float(params[1]), bool(int(params[2]))
+            clip = find_clip_by_start_time(track_index, start)
+            if clip is None:
+                return (track_index, start, "no clip at that start")
+            clip.muted = muted
+            return (track_index, start, bool(clip.muted))
+
+        def arrangement_clip_set_notes_muted(params):
+            track_index, start = int(params[0]), float(params[1])
+            from_pitch, pitch_span = int(params[2]), int(params[3])
+            from_time, time_span, muted = float(params[4]), float(params[5]), bool(int(params[6]))
+            clip = find_clip_by_start_time(track_index, start)
+            if clip is None or not clip.is_midi_clip:
+                return (track_index, start, "no MIDI clip at that start")
+            notes = clip.get_notes_extended(from_pitch, pitch_span, from_time, time_span)
+            for note in notes:
+                note.mute = muted
+            clip.apply_note_modifications(notes)
+            return (track_index, start, len(notes), muted)
+
+        def arrangement_clip_add_notes(params):
+            #--------------------------------------------------------------------------------
+            # Adds without clearing, unlike set/notes, so a clip too large to read back in one
+            # OSC reply can still take a note. Undo with remove/notes on the same window.
+            #--------------------------------------------------------------------------------
+            track_index, start = int(params[0]), float(params[1])
+            note_data = params[2:]
+            if len(note_data) % 5 != 0:
+                raise ValueError("Note data must be a multiple of 5 values")
+            clip = find_clip_by_start_time(track_index, start)
+            if clip is None or not clip.is_midi_clip:
+                return (track_index, start, "no MIDI clip at that start")
+            notes = []
+            for offset in range(0, len(note_data), 5):
+                pitch, start_time, duration, velocity, mute = note_data[offset:offset + 5]
+                notes.append(Live.Clip.MidiNoteSpecification(pitch=int(pitch), start_time=float(start_time),
+                                                             duration=float(duration), velocity=int(velocity),
+                                                             mute=bool(mute)))
+            clip.add_new_notes(tuple(notes))
+            return (track_index, start, len(notes))
+
+        def arrangement_clip_remove_notes(params):
+            track_index, start = int(params[0]), float(params[1])
+            from_pitch, pitch_span = int(params[2]), int(params[3])
+            from_time, time_span = float(params[4]), float(params[5])
+            clip = find_clip_by_start_time(track_index, start)
+            if clip is None or not clip.is_midi_clip:
+                return (track_index, start, "no MIDI clip at that start")
+            count = len(clip.get_notes_extended(from_pitch, pitch_span, from_time, time_span))
+            clip.remove_notes_extended(from_pitch, pitch_span, from_time, time_span)
+            return (track_index, start, count)
+
+        self.osc_server.add_handler("/live/arrangement_clip/add/notes", arrangement_clip_add_notes)
+        self.osc_server.add_handler("/live/arrangement_clip/remove/notes", arrangement_clip_remove_notes)
+        self.osc_server.add_handler("/live/arrangement_clip/get/props", arrangement_clip_get_props)
+        self.osc_server.add_handler("/live/arrangement_clip/set/muted", arrangement_clip_set_muted)
+        self.osc_server.add_handler("/live/arrangement_clip/set/notes_muted", arrangement_clip_set_notes_muted)

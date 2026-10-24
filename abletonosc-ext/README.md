@@ -113,6 +113,23 @@ Found while using them:
   (`create_clip`, then `/live/clip/add/notes` in chunks of about 60 notes), copy it to the
   Arrangement, and delete the Session clip.
 
+### Reversible edits, in the same module
+
+Added 2026-10-17 for auditioning a stripped section without deleting anything.
+
+| Address | Does |
+|---|---|
+| `/live/arrangement_clip/get/props <track> <start>` | `(start_marker, end_marker, loop_start, loop_end, looping, length, muted, is_midi)` |
+| `/live/arrangement_clip/set/muted <track> <start> <0/1>` | mutes or unmutes the clip; replies with the new state |
+| `/live/arrangement_clip/set/notes_muted <track> <start> <from_pitch> <pitch_span> <from_time> <time_span> <0/1>` | sets the mute flag on the notes starting in that window; replies with the count |
+| `/live/arrangement_clip/add/notes <track> <start> <note data...>` | adds notes without clearing the clip, for clips too large to read back and rewrite |
+| `/live/arrangement_clip/remove/notes <track> <start> <from_pitch> <pitch_span> <from_time> <time_span>` | removes the notes starting in that window; replies with how many there were |
+
+Note windows are clip time. Convert from song time with `song beat - start_time +
+start_marker`, so read `get/props` first. Muted clips and notes show greyed and come back
+with the 0 key. Unmuting a window also unmutes notes that were muted before, so back up
+the notes (or count the muted ones) first.
+
 ## return_track.py
 
 Read and set access to return tracks.
