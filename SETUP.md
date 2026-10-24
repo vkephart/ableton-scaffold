@@ -184,6 +184,14 @@ order.
 pip3 install --break-system-packages -r bridge/requirements.txt
 ```
 
+Check which interpreter `python3` resolves to before a session: `python3 -c "import
+pythonosc, yaml"`. More than one Python on a machine means the packages can be in one and
+not the other, and the bridge fails on import with nothing wrong in Live.
+
+`spectrum.py` also needs `numpy scipy soundfile matplotlib`, listed as optional. Install
+them into a venv that outlives the session. A venv built in a temporary directory is gone
+the next time, and can go mid-session.
+
 ---
 
 ## 5. Connect AbletonMCP
@@ -254,3 +262,26 @@ After cloning a track repo on another machine, rebuild its symlinks:
 ```bash
 <scaffold>/bin/new-song <song-name> --relink
 ```
+
+---
+
+## 8. Outboard synths
+
+A hardware synth has two routes from the bridge, and a third thing that is not a route.
+
+- **Through the vendor's editor plugin**, preferred. After a Configure pass with a hand on
+  the editor's controls, the bridge sets those parameters as 0 to 1 fractions and the
+  editor sends them to the box. Values come back as fractions; read seconds and levels off
+  the editor window.
+- **Direct CC to the synth's MIDI port**, for what is not configured. Take CC numbers from
+  the manual for the exact model, and say which manual. List the machine's MIDI
+  destinations before promising this route; with the synth off or unplugged there are
+  none.
+- **Notes do not pass through an editor plugin.** A clip on the editor's track plays
+  nothing. Notes reach the box only from a MIDI track whose output is the synth's port.
+  Clip envelopes on the editor's configured parameters do reach it.
+
+Verify a write on the box's own panel, not on the plugin window. The edit buffer is not
+saved until it is stored on the hardware, and an undo in Live sends the old values back
+(see `bridge/README.md`), so read the editor back and quote the values before anything is
+stored.

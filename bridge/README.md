@@ -161,6 +161,71 @@ Note that upstream AbletonOSC's own `client/client.py` uses 3.9 generics. That f
 desktop-side example client, not loaded by Live, so those two hits are expected and
 harmless.
 
+## What the session will and will not tell you
+
+Learned against Live 11.3. Each of these produced a wrong answer before it was written
+down.
+
+**Writes**
+
+- Rapid parameter writes over OSC can land out of order. A bisection that ended on the
+  right display string left an intermediate value in the device a few seconds later. Let
+  it settle, write the final value once more, and read the raw value back.
+- Neither AbletonOSC nor AbletonMCP can write Arrangement automation. The lanes are drawn
+  by hand. Read one back by stepping the stopped playhead and reading the parameter value
+  at each stop.
+- Bridge writes sit in Live's undo history. An undo at the desk reverts them, and if the
+  device is an editor plugin for outboard hardware, the old values go back to the box.
+  Re-read before anything is stored.
+- Live offers a group as a track's output only once the track is inside the group, so
+  routing to it over OSC fails until the track has been dragged in.
+- AbletonMCP's `load_browser_item` loads a Live-native device by URI with nobody at the
+  desk, for example `query:Synths#Analog`. The folder segment is required where there is
+  one: Utility is `query:AudioFx#Utilities:Utility`.
+
+**Reads**
+
+- An armed, monitoring audio track's meter reads the input before the devices. A trim
+  device on that track is invisible there. Confirm level on the Master meter or with a
+  capture. The OSC meter value is not dB-linear and no mapping is documented.
+- Native devices publish every parameter with unit strings. Third-party plugins publish
+  only what has been added in Configure mode, by hand, and that set is lost if the plugin
+  reloads. List the parameters again before promising a control.
+- Configured third-party parameters often come back as bare 0 to 1 fractions with no unit
+  string, and the curve is per parameter (FabFilter Pro-R: Decay Rate is logarithmic with
+  100 % at raw 0.5, Predelay is a curve). Read seconds and decibels off the plugin window
+  and say that is where they came from.
+- Soundtoys plugins publish `Bypass` as 1 when inserted, and 1 means bypassed. Set it to
+  0. EchoBoy's note value and sync are settable only in its own window in practice.
+- A note read of several thousand notes gets no reply. Read in windows of about 16 beats.
+
+**Capture**
+
+- `capture.py` can take tens of beats to start recording, because its per-track arm and
+  mixer queries are slow. Start the transport well ahead of the window, launch the
+  capture, wait for the new files to appear in the project's `Samples/Recorded`, then jump
+  the playhead with a send-only client (the capture holds the reply port).
+- Check `/live/song/get/loop` first. A transport loop wraps the pass.
+- `spectrum.py --against` needs both files at the same sample rate. Captures follow the
+  interface's rate, which may have changed since the reference was made.
+
+**Recording a hardware track from the bridge**
+
+`/live/clip_slot/fire` on an armed audio track's empty slot starts recording, and a second
+fire switches to playback at the next launch-quantize boundary. With quantization at 1 bar,
+a fire sent one to three beats before the target length ends the clip exactly. Restore the
+set's own quantization afterwards. Stop MIDI clips on the same bar line and confirm the
+meter reads zero before starting, or a hung note's release lands in the take.
+
+**The reply port**
+
+A hung OSC script keeps UDP 11001 bound and every later client fails with "Address already
+in use". Find it with `lsof -nP -iUDP:11001` and kill that PID; a venv interpreter shows
+up as the framework `Python.app` binary, so matching on the venv path misses it.
+`OscClient.close()` shuts the reply server down but leaves the port bound, so a script
+that holds a client must call `client._server.server_close()` before launching
+`capture.py` in a subprocess. Put `signal.alarm` on long OSC scripts.
+
 ## Ports
 
 | Protocol | Tool | Port |

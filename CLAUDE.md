@@ -72,6 +72,24 @@ there sees none of them. Never create a track repo inside this one.
 4. Run `/pull` to sync the session state into `parts/` and `chain/`.
 5. Append decisions to `log.md` before the session ends.
 
+## Ending a session
+
+1. Append the `/log` entry: what changed, what was decided, what is still open.
+2. Flag anything newly contradictory into the song's `conflicts.md`.
+3. Ask what was learned that is not about this song: a tool limit, a plugin's behaviour, a
+   way of working that failed or held. Write it here, in the scaffold, where the next song
+   will read it. Method rules go in this file, bridge and OSC behaviour in
+   `bridge/README.md`, install and rig facts in `SETUP.md`, handler notes in
+   `abletonosc-ext/README.md`. Strip the song out of it first: no track names, no lyrics,
+   no clip or file names. This repo is public and the song is not.
+4. Commit and push the track repo. If the scaffold changed, commit and push it too. Check
+   that local and remote match before calling the session closed.
+
+A commit that is never pushed is not a backup, and a lesson left in one song's log is not
+method. On one project, a month of sessions closed on local commits only, and everything
+learned about the bridge in that time sat in that song's log where no other song would
+find it.
+
 ---
 
 ## Method, and why each rule is here
@@ -111,6 +129,33 @@ Mixing them into analysis produces confident wrong answers about a part.
 
 **When a document and the session disagree, record it rather than silently picking one.**
 That is what `conflicts.md` is for, and closing an entry there is worth a `/log` line.
+
+**A read-back is not proof the change is audible, or that it is where the user thinks it
+is.** When someone at the desk doubts a write landed, give a test with a binary result
+they can see on the panel in front of them: a button that lights, a knob that moves. Say
+which panel. A meter delta that another cause could explain (the patch's own LFO, for one)
+is not evidence. Label estimates as estimates, and name the manual a number came from,
+after checking it is the manual for the device in the room and not its sibling.
+
+**Timbre is an ear call; measurement is for placement and level afterwards.** On a sound
+design pass, make or propose one change, say what changed and why, and wait for the
+listen. Capture only when asked to. One pass ran twelve captures on a voice that was then
+rejected by ear in a sentence: measurement had been choosing the sound. Keep the previous
+state recoverable.
+
+**Check the octave of a converted vocal against its source audio.** Live's Convert Melody
+has written a sung line twelve semitones high. Read at face value, that puts the whole
+voice in the wrong register against the bass and every unison or register call after it is
+wrong. Check the spectrum of a long note in the source audio first and state the
+correction. Conversion also turns creaky onsets into short quiet notes, drops quiet
+phrases, and merges syllables, so count notes against syllables before trusting it.
+
+**A vocal guide follows the singer's rhythm and changes pitch only.** A guide composed to
+the grid was rejected as unsingable even though its syllable counts were right. Build the
+guide from a syllable map of the singer's own take (forced alignment of the known lyric
+works), keep their onsets and lengths, put each note on the syllable's vowel and not on
+its opening consonant, run notes into each other inside a line, and audition it on a
+sustained sound, not a plucked one. Show the syllable map before writing a clip.
 
 **Do not "fix" what was chosen deliberately.** Out-of-key notes, an unresolved ending, a
 drumless outro and an empty track are as likely to be intentional as they are to be

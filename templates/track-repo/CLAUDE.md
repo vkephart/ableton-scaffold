@@ -15,9 +15,9 @@ machine, run `<scaffold>/bin/new-song {{SONG}} --relink`.
 
 ## Read before anything
 
-1. `brief.md` — what the song is, and which choices are deliberate
-2. `structure.md` — section map, start beats, tempo, key
-3. `log.md` — what happened last session and what is open
+1. `brief.md`, what the song is and which choices are deliberate
+2. `structure.md`, section map, start beats, tempo, key
+3. `log.md`, what happened last session and what is open
 4. `harmony.md` and `lyrics.md` when the session touches those
 
 Do not skip `brief.md`. It is what separates a deliberate choice from a mistake, and its
@@ -96,3 +96,14 @@ python3 .claude/scaffold/bridge/device.py --track "<Track>" --snapshot --song {{
 Append a `/log` entry: what changed, what was decided, what is still open. Flag anything
 newly contradictory into `conflicts.md`. A session that ends without a log entry has to be
 reconstructed from memory next time, and that is where documentation drift starts.
+
+Then two more steps, every time:
+
+- **Upstream what generalizes.** Anything learned that is not about this song (a tool
+  limit, a plugin's behaviour, a way of working that failed or held) goes into the
+  scaffold, with the song stripped out of it: no track names, no lyrics, no clip or file
+  names. The scaffold is public and this repo is not. Its `CLAUDE.md`, "Ending a session",
+  says which file takes what.
+- **Commit and push.** This repo, and the scaffold if it changed. Check that local and
+  remote match before calling the session closed. A commit that is never pushed is not a
+  backup.
