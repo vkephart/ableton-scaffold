@@ -112,6 +112,16 @@ python3 bridge/capture.py --source Pads --channel "Post FX" --beats 96 --out /tm
 Prints a JSON line with the mixer state at capture time; paste the relevant faders into
 the readings entry, because they are one of the five variables a capture has to pin.
 
+Placing a capture in song time: the CAP files appear on disk when the tracks are armed,
+before recording starts, and the start is not a fixed distance from a playhead jump
+(three passes in one session started 4, 4 and 0 beats after the jump target). Place the
+file by correlating one capture against an audio file whose position is known, such as a
+print the source track plays, and quote the correlation.
+
+Repeated audio through an amp or tape simulation is not sample-identical: two passes of
+the same file region through one bass chain correlated about 0.5. Before reading a low
+correlation as wrong content, measure a control pair the edit did not touch.
+
 ### spectrum.py
 
 Offline reading of a capture: levels, stereo correlation per band, band powers, centroid,

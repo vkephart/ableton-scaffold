@@ -103,6 +103,12 @@ Found while using them:
   clip, place a temporary copy where it should end, then delete the temporary one.
 - **There is no trim or split.** A part of a clip comes from a clip split by hand, or from a
   copy cut short by the trim trick above.
+- **A copy placed inside a longer clip splits it**: the parts before and after it stay as
+  two clips, the later one with its start marker moved on. That gives a split without a
+  hand. To get a piece of a clip as a source, park a temporary copy of the long clip past
+  the song's end, drop a short clip into it where the piece should stop, use the front
+  piece as the source for further copies, then delete the temporaries. Verified 2026-10-25
+  on audio and MIDI clips.
 - **A clip split by hand keeps all its notes**; the split only moves its start marker. Note
   reads on the second half return the hidden notes before the marker too, so judge a moved
   piece by its position, not by its first note.

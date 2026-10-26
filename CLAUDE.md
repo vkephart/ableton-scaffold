@@ -157,6 +157,34 @@ works), keep their onsets and lengths, put each note on the syllable's vowel and
 its opening consonant, run notes into each other inside a line, and audition it on a
 sustained sound, not a plucked one. Show the syllable map before writing a clip.
 
+**Adding or removing bars: the parts' cycles set the length and the fill.** When parts
+loop at different lengths (a 2-bar drum pattern against a 3-bar bass cell, say), an insert
+that keeps both in step is a multiple of each, and each part needs its own fill. "Repeat
+the N bars before the seam" suits one cycle and breaks another: on one song the drums were
+right and the bass jumped from the end of its lap back into the middle of it, which the
+user heard at once. For each part, check that every join the edit creates is one the song
+already makes somewhere (a cell repeating, the lap turning round). Copies of MIDI parts
+can start or stop mid-phrase at the clip edge; capture across each join before calling it
+done. Inserted and deleted time moves every later bar number, so rewrite the section map
+at once and note the offset for older documents.
+
+**Start with the smallest change that answers the note.** Asked for a breath between two
+sung sections, a 6-bar insert was advised because it kept every cycle whole; the user
+heard a new section and wanted a 2-bar tag. Offer the shortest length the cycles allow
+first. And do not cut time elsewhere only to restore the old length or bar numbers: on the
+same song a 2-bar cut was offered to win back the seconds, and on review it fixed nothing
+the listener would hear.
+
+**Record what a print sounds, measured, not the edit someone described.** A log entry
+recorded a +12 transposition from a reading of the conversation; the print measured +7 from
+a different harmonic than assumed. Pitch-track a print before writing its note into the
+docs.
+
+**Live's Save As moves the open set onto the new file.** A copy saved "as a backup" before
+an edit becomes the file being edited, and the old name keeps the old state. Read the
+locators out of each `.als` on disk (gzip XML, `Locator` elements) to say which file holds
+which version before recording it.
+
 **Do not "fix" what was chosen deliberately.** Out-of-key notes, an unresolved ending, a
 drumless outro and an empty track are as likely to be intentional as they are to be
 mistakes. Ask before correcting anything that reads as a deviation.
