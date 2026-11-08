@@ -37,6 +37,25 @@ which is the truthful answer: such tracks hold no arrangement clips.
 `set/notes` clears the clip's full pitch and time range before writing, so a repeated push
 replaces rather than stacking duplicates.
 
+### Audio clip facts, in the same module
+
+Added 2026-11-07, to measure the level of a comped vocal straight from its files. Stock
+AbletonOSC reads `gain` and `file_path` for Session clips only.
+
+| Address | Returns |
+|---|---|
+| `/live/arrangement_clip/get/audio <track> <start_time>` | `(track, start, end_time, name, file_path, gain, gain_display_string, start_marker, end_marker, warping, warp_mode, sample_length, sample_rate, start_sample, end_sample, muted)` |
+| `/live/arrangement_clip/set/gain <track> <start_time> <gain>` | `(track, start, gain, gain_display_string)` after the set |
+
+`gain` is Live's raw 0 to 1 value (0.4 is 0.00 dB); the display string is the dB. The two
+sample positions come from `Clip.beat_to_sample_time` on the markers, so they are the file
+samples the clip plays from, warp and offset included (a recorded take's sample 0 often
+sits a few clip beats in). Two facts found the same day: a split Arrangement clip keeps
+the whole take's `end_marker`, so measure `start_sample` to `start_sample + (end_time -
+start_time) * samples_per_beat`, not to `end_sample`; and Live's Consolidate normalises the
+new file to 0 dBFS and compensates in clip gain, so a raw-file peak of 0.0 is not clipping
+and the level that plays is file plus gain.
+
 ### Clip envelopes (Session clips), in the same module
 
 Stock AbletonOSC cannot write automation. These live in `arrangement_clip.py` only because

@@ -412,6 +412,54 @@ class ArrangementClipHandler(AbletonOSCHandler):
             clip.remove_notes_extended(from_pitch, pitch_span, from_time, time_span)
             return (track_index, start, count)
 
+        #--------------------------------------------------------------------------------
+        # Audio clip facts (2026-11-07). Stock AbletonOSC reads gain and file_path for
+        # Session clips only. get/audio returns, for an Arrangement audio clip, the file it
+        # plays, its clip gain (raw and Live's dB string), its start and end markers and,
+        # for a warped clip, the sample positions those markers map to, so a client can
+        # measure the audio the clip actually plays straight from the file. set/gain takes
+        # the raw 0 to 1 value and echoes the dB string, for a bisection to a target.
+        #--------------------------------------------------------------------------------
+        def _attr(obj, name, default=None):
+            try:
+                return getattr(obj, name)
+            except Exception:
+                return default
+
+        def arrangement_clip_get_audio(params):
+            track_index, start = int(params[0]), float(params[1])
+            clip = find_clip_by_start_time(track_index, start)
+            if clip is None:
+                return (track_index, start, "no clip at that start")
+            if clip.is_midi_clip:
+                return (track_index, start, "midi clip")
+            sm, em = float(clip.start_marker), float(clip.end_marker)
+            warping = bool(_attr(clip, "warping", False))
+            s_samp = e_samp = -1.0
+            if warping:
+                try:
+                    s_samp = float(clip.beat_to_sample_time(sm))
+                    e_samp = float(clip.beat_to_sample_time(em))
+                except Exception:
+                    pass
+            return (track_index, start, float(clip.end_time), str(clip.name),
+                    str(_attr(clip, "file_path", "")),
+                    float(_attr(clip, "gain", -1.0)), str(_attr(clip, "gain_display_string", "")),
+                    sm, em, warping, int(_attr(clip, "warp_mode", -1)),
+                    float(_attr(clip, "sample_length", -1)), float(_attr(clip, "sample_rate", -1)),
+                    s_samp, e_samp, bool(clip.muted))
+
+        def arrangement_clip_set_gain(params):
+            track_index, start, gain = int(params[0]), float(params[1]), float(params[2])
+            clip = find_clip_by_start_time(track_index, start)
+            if clip is None or clip.is_midi_clip:
+                return (track_index, start, "no audio clip at that start")
+            clip.gain = gain
+            return (track_index, start, float(clip.gain), str(_attr(clip, "gain_display_string", "")))
+
+        self.osc_server.add_handler("/live/arrangement_clip/get/audio", arrangement_clip_get_audio)
+        self.osc_server.add_handler("/live/arrangement_clip/set/gain", arrangement_clip_set_gain)
+
         self.osc_server.add_handler("/live/arrangement_clip/add/notes", arrangement_clip_add_notes)
         self.osc_server.add_handler("/live/arrangement_clip/remove/notes", arrangement_clip_remove_notes)
         self.osc_server.add_handler("/live/arrangement_clip/get/props", arrangement_clip_get_props)
