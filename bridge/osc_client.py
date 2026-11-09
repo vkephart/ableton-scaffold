@@ -140,8 +140,24 @@ class OscClient:
             )
         return [(values[i], values[i + 1]) for i in range(0, len(values), 2)]
 
+    def get_arrangement_clip_props(self, track_index, clip_start_time):
+        """Return the clip's markers as a dict: start_marker, end_marker, loop_start,
+        loop_end, looping, length, muted, is_midi. None when no clip starts there."""
+        r = self.query("/live/arrangement_clip/get/props", "/live/arrangement_clip/get/props",
+                       track_index, float(clip_start_time))
+        if not r or len(r) < 10:
+            return None
+        keys = ("start_marker", "end_marker", "loop_start", "loop_end", "looping",
+                "length", "muted", "is_midi")
+        return dict(zip(keys, r[2:10]))
+
     def get_arrangement_clip_notes(self, track_index, clip_start_time):
-        """Return flat note list [pitch, start, dur, vel, mute, ...] from extended handler."""
+        """Return flat note list [pitch, start, dur, vel, mute, ...] from extended handler.
+
+        Note starts are beats from the clip's left edge on the timeline, so song beat =
+        clip_start_time + start for every clip, whatever its start marker (the handler
+        converts since 2026-11-08; before that it reported raw clip time, which is off by
+        the start marker on any trimmed or dragged clip)."""
         result = self.query(
             "/live/arrangement_clip/get/notes",
             "/live/arrangement_clip/get/notes",

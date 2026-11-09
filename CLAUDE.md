@@ -150,6 +150,17 @@ wrong. Check the spectrum of a long note in the source audio first and state the
 correction. Conversion also turns creaky onsets into short quiet notes, drops quiet
 phrases, and merges syllables, so count notes against syllables before trusting it.
 
+**A clip's time 0 is its marker 0, not its left edge.** Live counts clip time from the
+start marker, and a clip that was trimmed, split or had its contents dragged has a marker
+that is not 0. A note read that assumes clip time 0 sits at the clip's start on the timeline
+reports every position off by the marker, and the error is silent: the numbers look right
+and the user, who hears the clip, is the one who catches it. That happened on 2026-11-08
+with a vocal guide whose marker sat eight beats in: a day of positions two bars late, an
+overlap that did not exist, and a comp called misaligned when it was not. The bridge's note
+handlers now convert, so song beat = clip start plus reported time for every clip. The
+general rule stands for any other read: before quoting a timeline position from inside a
+clip, read its markers.
+
 **A vocal guide follows the singer's rhythm and changes pitch only.** A guide composed to
 the grid was rejected as unsingable even though its syllable counts were right. Build the
 guide from a syllable map of the singer's own take (forced alignment of the known lyric

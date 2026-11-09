@@ -34,8 +34,18 @@ means no reply is ever sent and the client blocks for a full timeout. Bus-heavy 
 hit this on every group track. Here the refusal is caught and answered with an empty set,
 which is the truthful answer: such tracks hold no arrangement clips.
 
-`set/notes` clears the clip's full pitch and time range before writing, so a repeated push
-replaces rather than stacking duplicates.
+`set/notes` clears the window the clip plays before writing, so a repeated push replaces
+rather than stacking duplicates.
+
+**Note times are beats from the clip's left edge on the timeline** (song beat minus
+`start_time`), for every note handler here, since 2026-11-08. Live's own clip time counts
+from marker 0, and a clip that was trimmed, split, or had its contents dragged has a start
+marker that is not 0, so raw clip time is off by that marker. Before the change `get/notes`
+read clip time 0 to `length` and reported it raw: such a clip came back with notes that did
+not play, or none, at positions off by the marker, and a vocal guide with its marker at 8
+was documented two bars late for a day before the singer noticed. Now the handlers read and
+write the window `start_marker` to `start_marker + length` and add or subtract the marker
+themselves. `get/props` still returns the raw markers for anyone who needs them.
 
 ### Audio clip facts, in the same module
 
@@ -150,8 +160,8 @@ Added 2026-10-17 for auditioning a stripped section without deleting anything.
 | `/live/arrangement_clip/add/notes <track> <start> <note data...>` | adds notes without clearing the clip, for clips too large to read back and rewrite |
 | `/live/arrangement_clip/remove/notes <track> <start> <from_pitch> <pitch_span> <from_time> <time_span>` | removes the notes starting in that window; replies with how many there were |
 
-Note windows are clip time. Convert from song time with `song beat - start_time +
-start_marker`, so read `get/props` first. Muted clips and notes show greyed and come back
+Note windows are beats from the clip's left edge (song beat minus `start_time`); the
+handlers add the start marker. Muted clips and notes show greyed and come back
 with the 0 key. Unmuting a window also unmutes notes that were muted before, so back up
 the notes (or count the muted ones) first.
 

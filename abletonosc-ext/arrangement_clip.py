@@ -216,11 +216,21 @@ class ArrangementClipHandler(AbletonOSCHandler):
             # Signature is get_notes_extended(from_pitch, pitch_span, from_time, time_span).
             # Times are relative to the clip's own start, not the arrangement timeline.
             #--------------------------------------------------------------------------------
-            notes = clip.get_notes_extended(0, 128, 0, clip.length)
+            #--------------------------------------------------------------------------------
+            # Clip time 0 is the clip's marker 0, not its left edge on the timeline. A clip
+            # whose start marker has moved (trimmed, split, or its contents dragged) plays
+            # clip time t at song beat start_time + t - start_marker. Until 2026-11-08 this
+            # read 0 to length and reported raw clip time, so such a clip came back with the
+            # wrong notes (or none) at positions that were off by the marker. Now: read the
+            # window the clip plays and report times from its left edge, so song beat =
+            # start_time + reported time for every clip.
+            #--------------------------------------------------------------------------------
+            edge = float(clip.start_marker)
+            notes = clip.get_notes_extended(0, 128, edge, clip.length)
 
             all_note_attributes = []
             for note in notes:
-                all_note_attributes += [note.pitch, note.start_time,
+                all_note_attributes += [note.pitch, note.start_time - edge,
                                         note.duration, note.velocity, note.mute]
             return (track_index, clip_start_time, *all_note_attributes)
 
@@ -243,21 +253,22 @@ class ArrangementClipHandler(AbletonOSCHandler):
                                     (track_index, clip_start_time))
                 return (track_index, clip_start_time, 0)
 
+            edge = float(clip.start_marker)  # times arrive from the clip's left edge
             notes = []
             for offset in range(0, len(note_data), 5):
                 pitch, start_time, duration, velocity, mute = note_data[offset:offset + 5]
                 note = Live.Clip.MidiNoteSpecification(pitch=int(pitch),
-                                                       start_time=float(start_time),
+                                                       start_time=float(start_time) + edge,
                                                        duration=float(duration),
                                                        velocity=int(velocity),
                                                        mute=bool(mute))
                 notes.append(note)
 
             #--------------------------------------------------------------------------------
-            # Replace rather than merge: clear the clip's full pitch and time range first,
-            # so a set is idempotent and does not stack duplicate notes on repeat pushes.
+            # Replace rather than merge: clear the window the clip plays first, so a set is
+            # idempotent and does not stack duplicate notes on repeat pushes.
             #--------------------------------------------------------------------------------
-            clip.remove_notes_extended(0, 128, 0, clip.length)
+            clip.remove_notes_extended(0, 128, edge, clip.length)
             if notes:
                 clip.add_new_notes(tuple(notes))
 
@@ -346,9 +357,8 @@ class ArrangementClipHandler(AbletonOSCHandler):
         # Reversible edits (2026-10-17): mute a whole clip, or mute the notes in a pitch
         # and time window, instead of deleting anything. Muted clips and notes show greyed
         # in Live and come back with the 0 key, or with the same call and 0.
-        # Note windows are in clip time, which differs from song time minus start_time
-        # whenever the clip's start marker is not 0 (a clip split or trimmed by hand), so
-        # get/props first and convert: clip time = song beat - start_time + start_marker.
+        # Note windows are given from the clip's left edge on the timeline (song beat minus
+        # start_time); the handlers add the start marker themselves (since 2026-11-08).
         #--------------------------------------------------------------------------------
         def arrangement_clip_get_props(params):
             track_index, start = int(params[0]), float(params[1])
@@ -374,6 +384,7 @@ class ArrangementClipHandler(AbletonOSCHandler):
             clip = find_clip_by_start_time(track_index, start)
             if clip is None or not clip.is_midi_clip:
                 return (track_index, start, "no MIDI clip at that start")
+            from_time += float(clip.start_marker)  # window given from the clip's left edge
             notes = clip.get_notes_extended(from_pitch, pitch_span, from_time, time_span)
             for note in notes:
                 note.mute = muted
@@ -392,10 +403,11 @@ class ArrangementClipHandler(AbletonOSCHandler):
             clip = find_clip_by_start_time(track_index, start)
             if clip is None or not clip.is_midi_clip:
                 return (track_index, start, "no MIDI clip at that start")
+            edge = float(clip.start_marker)  # times arrive from the clip's left edge
             notes = []
             for offset in range(0, len(note_data), 5):
                 pitch, start_time, duration, velocity, mute = note_data[offset:offset + 5]
-                notes.append(Live.Clip.MidiNoteSpecification(pitch=int(pitch), start_time=float(start_time),
+                notes.append(Live.Clip.MidiNoteSpecification(pitch=int(pitch), start_time=float(start_time) + edge,
                                                              duration=float(duration), velocity=int(velocity),
                                                              mute=bool(mute)))
             clip.add_new_notes(tuple(notes))
@@ -408,6 +420,7 @@ class ArrangementClipHandler(AbletonOSCHandler):
             clip = find_clip_by_start_time(track_index, start)
             if clip is None or not clip.is_midi_clip:
                 return (track_index, start, "no MIDI clip at that start")
+            from_time += float(clip.start_marker)  # window given from the clip's left edge
             count = len(clip.get_notes_extended(from_pitch, pitch_span, from_time, time_span))
             clip.remove_notes_extended(from_pitch, pitch_span, from_time, time_span)
             return (track_index, start, count)
