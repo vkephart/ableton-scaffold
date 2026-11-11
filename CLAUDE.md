@@ -222,6 +222,13 @@ an edit becomes the file being edited, and the old name keeps the old state. Rea
 locators out of each `.als` on disk (gzip XML, `Locator` elements) to say which file holds
 which version before recording it.
 
+**Review a part against its plan before proposing changes to it.** Lay what the documents
+planned for the part beside what the set holds, section by section, and line it up with
+the parts around it (bass cycle, sung syllables, other layers) from one read of the set.
+On one song a drum lane judged for "variety" turned out to have a sound two-bar cell and
+three unbuilt steps of its own planned orchestration, plus its named effect sitting at a
+send level too low to hear. The opportunities were the unbuilt plan, not edits to the cell.
+
 **Do not "fix" what was chosen deliberately.** Out-of-key notes, an unresolved ending, a
 drumless outro and an empty track are as likely to be intentional as they are to be
 mistakes. Ask before correcting anything that reads as a deviation.

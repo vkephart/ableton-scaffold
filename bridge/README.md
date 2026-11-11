@@ -219,6 +219,22 @@ down.
 - Soundtoys plugins publish `Bypass` as 1 when inserted, and 1 means bypassed. Set it to
   0. EchoBoy's note value and sync are settable only in its own window in practice.
 - A note read of several thousand notes gets no reply. Read in windows of about 16 beats.
+- The saved set file answers what the bridge cannot, with nothing touched. An `.als` is
+  gzip XML. Copy it out of the project, unzip the copy and parse that. It holds every
+  Arrangement clip with its markers and loop, every note with its mute flag
+  (`MidiNoteEvent`, `IsEnabled`), every Arrangement automation lane (`AutomationEnvelope`,
+  matched to its parameter through the `AutomationTarget` ids), and the mixer. No
+  transport, no playhead, no reply-size limit, so it suits a whole-song read with nobody
+  at the desk. Four things to know. It is the state at the last save: check the file time
+  and cross-check the clip list and one small clip over OSC before trusting it. A looped
+  Arrangement clip plays note time t at clip start + t - (loop start + start offset),
+  wrapping at the loop length; an unlooped one uses the loop start field as its start
+  marker. Faders and sends are stored as linear gain (1.0 is 0 dB, 0.000316 is the -70 dB
+  floor), not as the raw 0 to 1 the bridge returns, so the file gives the dB that a raw
+  send read cannot. Third-party plugin state is opaque in it.
+- A send's raw value hides how low it is. Raw 0.75 is -10 dB, 0.45 is -22 dB and 0.25 is
+  about -35 dB. A send parked at a low "starting level" is in effect off, and a document
+  that lists it reads as if the effect were in the song.
 
 **Capture**
 
