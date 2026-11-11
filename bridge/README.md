@@ -232,9 +232,12 @@ down.
   marker. Faders and sends are stored as linear gain (1.0 is 0 dB, 0.000316 is the -70 dB
   floor), not as the raw 0 to 1 the bridge returns, so the file gives the dB that a raw
   send read cannot. Third-party plugin state is opaque in it.
-- A send's raw value hides how low it is. Raw 0.75 is -10 dB, 0.45 is -22 dB and 0.25 is
-  about -35 dB. A send parked at a low "starting level" is in effect off, and a document
-  that lists it reads as if the effect were in the song.
+- A send's raw value hides how low it is. Read from one set file against the bridge: raw
+  0.75 is -10 dB, 0.45 is -22 dB and 0.25 is about -35 dB. A send parked at a low
+  "starting level" may be far under every other feed into the same return, while a
+  document that lists it reads as if the effect were plainly in the song. A send gain is
+  still not a level: say what the send reads, and call the effect audible or not only
+  after listening to the return or measuring it.
 
 **Capture**
 

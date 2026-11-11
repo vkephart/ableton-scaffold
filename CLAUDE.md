@@ -226,8 +226,11 @@ which version before recording it.
 planned for the part beside what the set holds, section by section, and line it up with
 the parts around it (bass cycle, sung syllables, other layers) from one read of the set.
 On one song a drum lane judged for "variety" turned out to have a sound two-bar cell and
-three unbuilt steps of its own planned orchestration, plus its named effect sitting at a
-send level too low to hear. The opportunities were the unbuilt plan, not edits to the cell.
+three unbuilt steps of its own planned orchestration, plus its named effect fed about
+30 dB under the other feeds into the same return and never checked in the mix. The
+opportunities were the unbuilt plan, not edits to the cell. Quote a filed plan exactly
+when a proposal leans on it: the same review first offered a pattern as "the filed one"
+that the filing's own wording excluded.
 
 **Do not "fix" what was chosen deliberately.** Out-of-key notes, an unresolved ending, a
 drumless outro and an empty track are as likely to be intentional as they are to be
