@@ -191,6 +191,32 @@ recorded a +12 transposition from a reading of the conversation; the print measu
 a different harmonic than assumed. Pitch-track a print before writing its note into the
 docs.
 
+**A clip gain on a consolidated clip is bookkeeping, not a level decision.** Consolidate
+normalises the new file and puts the difference in clip gain, so the dB on the clip says
+nothing about what anyone chose. A session close once logged such a figure as the singer's
+level call for a layer; the layer played about 8 dB above what the log implied, and the
+person did not recognise the decision when it was read back. Before quoting a clip gain,
+read the clip's file path: a consolidated file or a file peak at 0 dBFS means report what
+plays (file level plus gain), phrase by phrase, and say whose move it was only if they
+said so.
+
+**Check a throw against the word's sounds, not the word.** A send ride drawn by eye over a
+waveform was meant for one word and covered three; another peaked on a word's vowel and
+had fallen away by its consonant, which was the sound the throw was for. Read the lane
+back, take syllable onsets from the vocal guide clip, and find the consonants with a
+high-passed envelope of the print (sibilants show above 5 kHz where the body band goes
+quiet). Report both in the ruler's own positions. A throw cannot bring out a sound the
+take does not have: measure the consonant against a neighbouring one before shaping the
+lane around it.
+
+**When a layer feels weaker in one section, compare what reaches the fader.** Read the
+fader, pan and sends at a few points in every section first; if they match, the setting is
+not the cause. Then measure the layer against its lead per phrase in each section: the
+sustained level (gated RMS), not only the loudest window, and the share of energy in 2.5
+to 5 kHz. On one song the loudest windows matched in all four sections while the body sat
+2 dB lower and darker in the one that lacked punch, which pointed at the delivery and
+away from the mixer.
+
 **Live's Save As moves the open set onto the new file.** A copy saved "as a backup" before
 an edit becomes the file being edited, and the old name keeps the old state. Read the
 locators out of each `.als` on disk (gzip XML, `Locator` elements) to say which file holds

@@ -64,7 +64,10 @@ sits a few clip beats in). Two facts found the same day: a split Arrangement cli
 the whole take's `end_marker`, so measure `start_sample` to `start_sample + (end_time -
 start_time) * samples_per_beat`, not to `end_sample`; and Live's Consolidate normalises the
 new file to 0 dBFS and compensates in clip gain, so a raw-file peak of 0.0 is not clipping
-and the level that plays is file plus gain.
+and the level that plays is file plus gain. Map song beats to file samples through
+`start_sample`, never through `start_marker` times the tempo: on a warped take the start
+marker can read 2.0 beats while the clip plays from sample 0, and a measurement taken from
+the marker lands two beats out and still looks like audio.
 
 ### Clip envelopes (Session clips), in the same module
 

@@ -184,6 +184,17 @@ down.
 - Neither AbletonOSC nor AbletonMCP can write Arrangement automation. The lanes are drawn
   by hand. Read one back by stepping the stopped playhead and reading the parameter value
   at each stop.
+- A stepped read needs the transport left alone, and the person at the desk does not know
+  that unless told. Say so before starting (what, how long, do not press play) and say
+  when it is done. Guard the script as well: check `/live/song/get/is_playing` before the
+  first step, read `/live/song/get/current_song_time` back after every set and compare,
+  retry once, stop without touching the playhead if playback has started, and otherwise put
+  the playhead back where it was. A read taken during playback returns the value at the
+  moving playhead and looks plausible. Quarter-beat steps find a throw; sixteenth-beat
+  steps over the throw give its shape. About 0.15 to 0.2 s per step is enough.
+- Track sends come back raw (0 to 1) with no display string, and the rule against
+  hand-converting raw values holds for them. Quote them as raw and ask for the dB off a
+  breakpoint or the knob when a dB is needed.
 - Bridge writes sit in Live's undo history. An undo at the desk reverts them, and if the
   device is an editor plugin for outboard hardware, the old values go back to the box.
   Re-read before anything is stored.
