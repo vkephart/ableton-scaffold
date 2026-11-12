@@ -213,6 +213,12 @@ down.
   are the monitors and the first line output is channel 3, so "line out 3 and 4" can be
   Live's `5/6`. Read the driver's channel names before routing (on macOS, CoreAudio's
   element-name property on the output scope) and say both numbers when reporting.
+- An interface's own mixer can own a line output. If its cue or monitor routing mirrors a
+  mix onto a line pair, the DAW's signal to that pair does not arrive and the monitor mix
+  comes out there instead. On one rig a hardware sync input fed from such a jack was
+  clocked by the drums in the mix. Ask to see the interface mixer's output assignments
+  before routing a DAW signal to a line output, and test with the DAW stopped: the jack
+  should be silent.
 - A clock pulse for a hardware sync input wants one edge per step. A click with several
   cycles in it can advance the box more than once; a single cycle of a low square, gated by
   a note a little shorter than the cycle, gives one upward edge whichever half comes first.
