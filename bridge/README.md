@@ -203,6 +203,19 @@ down.
 - AbletonMCP's `load_browser_item` loads a Live-native device by URI with nobody at the
   desk, for example `query:Synths#Analog`. The folder segment is required where there is
   one: Utility is `query:AudioFx#Utilities:Utility`.
+- A track's output can be set over OSC: `/live/track/set/output_routing_type` (for example
+  `Ext. Out`), then `/live/track/set/output_routing_channel`. The channel list only appears
+  once the type is set, and the type lands on the first pair, usually the monitors. A new
+  track arrives on Master at 0 dB, so pull its fader down before routing it to hardware and
+  leave it down for whoever is at the desk to raise.
+- Live's external output numbers are the driver's channel numbers, not the numbers printed
+  on the interface. On an interface with a dedicated monitor pair, driver channels 1 and 2
+  are the monitors and the first line output is channel 3, so "line out 3 and 4" can be
+  Live's `5/6`. Read the driver's channel names before routing (on macOS, CoreAudio's
+  element-name property on the output scope) and say both numbers when reporting.
+- A clock pulse for a hardware sync input wants one edge per step. A click with several
+  cycles in it can advance the box more than once; a single cycle of a low square, gated by
+  a note a little shorter than the cycle, gives one upward edge whichever half comes first.
 
 **Reads**
 
