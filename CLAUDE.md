@@ -103,6 +103,16 @@ loose drum-map files all disagreed with the vendor keymap and with each other, w
 real keymap sat unused in the manuals folder the whole time. Programming from any of them
 would have written onto the wrong articulations throughout.
 
+**A manual whose text will not extract is still readable; read the page itself.** Some
+hardware manuals are one poster-sized page per language with a text layer that extracts as
+garbage. Reading the PDF directly, as a page image, gave every sentence. On one song a
+drum machine's manual was first reported from its headings alone, and a plan was built on
+a control that the body text says does not reach the sound source in question. Two more
+habits from the same case: the MIDI implementation chart is often a separate download from
+the owner's manual, so fetch both; and when neither document settles a behaviour (whether
+an effect follows tempo, whether it fires on incoming notes), list it as a test on the box
+and do not fill it in from memory.
+
 **Verify documentation against the session before trusting it.** Documentation drifts and
 nothing contradicts it until someone checks. One day of checking against a real session
 turned up a wrong intro length, three wrong section lengths, a mislabelled chord, a
