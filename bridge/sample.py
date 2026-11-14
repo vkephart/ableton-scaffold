@@ -177,8 +177,9 @@ def main():
                 raise Stop(f"the playhead did not move to beat {pre:g} (it reads {at:g})")
 
         # ---- transport ----
-        # start_playing, not continue_playing: continue resumes from where the transport last
-        # stopped and ignores a playhead set while stopped.
+        # A playhead set while the transport is stopped does not decide where playback begins:
+        # continue_playing resumed from the last stop, and start_playing also began elsewhere
+        # on both verified passes. What lands is the jump while playing, just below.
         c.send("/live/song/start_playing")
         for ti in idxs:
             c.send("/live/clip_slot/fire", ti, 0)
@@ -197,6 +198,7 @@ def main():
             c.send("/live/song/set/current_song_time", float(pre)); time.sleep(0.3)
             seen = q("/live/song/get/current_song_time")[0]
             log["jumped_while_playing"] = True
+            print(f"playback began away from the pre-roll; jumped while playing, now at beat {seen:.2f}")
         log["recording_seen_at_beat"] = seen
         if not (pre - 0.5 <= seen <= start - 0.25):
             raise Stop(f"recording was not running before the window (playhead at beat {seen:.2f}, window starts at {start:g}); raise --preroll-bars")
@@ -251,6 +253,11 @@ def main():
                 restored = [f"tracks {n_after} (was {n_before})", f"temporary tracks left: {left or 'none'}",
                             f"playhead {q('/live/song/get/current_song_time')[0]:.2f}", f"loop {bool(q('/live/song/get/loop')[0])}",
                             f"playing {bool(q('/live/song/get/is_playing')[0])}"]
+                for key, addr in (("quantization", "/live/song/get/clip_trigger_quantization"), ("metronome", "/live/song/get/metronome")):
+                    try:
+                        restored.append(f"{key} {q(addr, t=2.0)[0]} (was {state.get(key)})")
+                    except TimeoutError:
+                        pass
                 print("restored:", "; ".join(restored))
                 log["restored"] = restored
         finally:

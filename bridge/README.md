@@ -139,10 +139,12 @@ What `sample.py` handles so nobody has to again:
 
 - Everything slow (creating, routing and arming the temporary tracks, the mixer read) is
   done before the transport starts. Each OSC round trip takes longer while Live plays.
-- It starts with `/live/song/start_playing`. `continue_playing` resumes from where the
-  transport last stopped and ignores a playhead that was set while stopped: the first run
-  recorded the wrong 20 seconds that way. If playback still begins elsewhere, it jumps the
-  playhead while playing, which does land.
+- A playhead set while the transport is stopped does not decide where playback begins.
+  `continue_playing` resumed from where the transport last stopped, and the first run
+  recorded the wrong 20 seconds that way; `start_playing` also began elsewhere on both
+  verified passes. What lands is setting the playhead while playing, so the script starts,
+  checks where it is, and jumps. It prints a line when it had to. The second or so of
+  audio recorded before the jump is why the pre-roll is two bars.
 - Launch quantization, the loop and the metronome are switched off for the pass and put
   back. Arm states and the playhead are put back, and the track count is checked.
 - A signal or a timeout raises, so the cleanup still runs. A bare `signal.alarm` would
