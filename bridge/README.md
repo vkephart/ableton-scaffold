@@ -259,6 +259,21 @@ down.
   marker. Faders and sends are stored as linear gain (1.0 is 0 dB, 0.000316 is the -70 dB
   floor), not as the raw 0 to 1 the bridge returns, so the file gives the dB that a raw
   send read cannot. Third-party plugin state is opaque in it.
+- Before writing a planned change into a clip, read the track's clip list again with end
+  times (`/live/arrangement_clip/get/info`) and compare it with the last documented read.
+  A Session clip launched on any track while the Arrangement is recording is recorded over
+  that track's Arrangement clip, from the launch to the stop, and nobody at the desk need
+  notice: the tell is a clip named like a Session slot, matching it note for note, with an
+  end that is off the grid by a fraction of a beat, and a neighbour whose left edge was cut
+  by the same fraction. Live's `Backup` folder dates it: scan the dated saves for the first
+  one that has the edge. Everything judged by ear after that save was judged against the
+  overwritten part, so say which rulings want hearing again.
+- A clip cut short by an overwrite keeps every note behind its edge. A note write into the
+  hidden part replies with the right count and makes no sound, so check the clip's
+  `end_time` covers the target beat before `add/notes`. A short looped clip cannot take a
+  figure that does not repeat at its loop length. Dragging the cut clip's edge back out by
+  hand restores the original notes; a rebuild from the bridge does not reach a left edge
+  that sits a fraction of a beat off the bar.
 - A send's raw value hides how low it is. Read from one set file against the bridge: raw
   0.75 is -10 dB, 0.45 is -22 dB and 0.25 is about -35 dB. A send parked at a low
   "starting level" may be far under every other feed into the same return, while a
