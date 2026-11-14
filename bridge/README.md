@@ -220,8 +220,10 @@ down.
   before routing a DAW signal to a line output, and test with the DAW stopped: the jack
   should be silent.
 - A clock pulse for a hardware sync input wants one edge per step. A click with several
-  cycles in it can advance the box more than once; a single cycle of a low square, gated by
-  a note a little shorter than the cycle, gives one upward edge whichever half comes first.
+  cycles in it can advance the box more than once, and so can a single full cycle: on one
+  drum machine a one-cycle square (up, down, back to zero) gave an uneven, doubled pattern,
+  and a pulse of one polarity only (the first half of a low square, gated by a note half the
+  cycle long) stepped it cleanly, one step per pulse. Build the one-polarity pulse first.
 
 **Reads**
 
