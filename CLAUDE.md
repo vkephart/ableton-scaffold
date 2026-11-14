@@ -72,6 +72,15 @@ there sees none of them. Never create a track repo inside this one.
 4. Run `/pull` to sync the session state into `parts/` and `chain/`.
 5. Append decisions to `log.md` before the session ends.
 
+## Level by numbers needs the spectrum first
+
+Matching one part's RMS to another's only means equal loudness when the two sit in the same
+band. A layer whose energy is mostly above 10 kHz reads much quieter than its RMS says. Read
+the spectrum of both before proposing a level from a meter comparison, and say which band the
+energy is in. The same check catches a filter that is really a gain stage: a resonant
+high-pass placed where the signal's energy is, plus a preset's output gain, can add 10 dB
+while looking like a cut. Model the filter on the measured spectrum and report the net change.
+
 ## Ending a session
 
 1. Append the `/log` entry: what changed, what was decided, what is still open.
