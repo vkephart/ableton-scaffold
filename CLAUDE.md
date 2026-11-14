@@ -265,6 +265,7 @@ mistakes. Ask before correcting anything that reads as a deviation.
 | `/push <part-file>` | Write notes from a part file into an Ableton Session clip |
 | `/device <track> <device> <param> [value]` | Read or set a device parameter by name |
 | `/log <message>` | Append a dated decision entry to the active song's log.md |
+| `/sample <from> <to> <track> [--anchor pos]` | Capture a bar range and measure level, loudness and decay; only when the user says to sample |
 | `/song <name>` | Switch active song context, or scaffold a new track repo |
 
 ## Agents

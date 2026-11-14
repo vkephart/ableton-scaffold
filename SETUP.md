@@ -188,6 +188,10 @@ Check which interpreter `python3` resolves to before a session: `python3 -c "imp
 pythonosc, yaml"`. More than one Python on a machine means the packages can be in one and
 not the other, and the bridge fails on import with nothing wrong in Live.
 
+Anything that reads audio (`sample.py`, `measure.py`, `spectrum.py`) runs in the scaffold's
+own environment, built once per machine with `bin/setup-analysis` into `.venv` (gitignored)
+from `requirements-analysis.txt`. Call those scripts through `bin/analysis-python`, which
+builds the environment if it is missing. Do not build a throwaway environment per session.
 `spectrum.py` also needs `numpy scipy soundfile matplotlib`, listed as optional. Install
 them into a venv that outlives the session. A venv built in a temporary directory is gone
 the next time, and can go mid-session.

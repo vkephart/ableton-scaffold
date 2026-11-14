@@ -68,7 +68,10 @@ class OscClient:
         )
 
     def close(self):
+        # shutdown() stops the reply thread; server_close() releases the UDP port, without
+        # which the next client in the same process tree fails with "Address already in use".
         self._server.shutdown()
+        self._server.server_close()
 
     # ----------------------------------------------------------------
     # Reply-prefix helpers

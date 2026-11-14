@@ -1,0 +1,8 @@
+#!/bin/bash
+# Run Python from the scaffold's permanent analysis environment (numpy, scipy, soundfile,
+# matplotlib, pyloudnorm, python-osc). Builds it on first use.
+here="$(cd "$(dirname "$0")/.." && pwd)"
+if [ ! -x "$here/.venv/bin/python" ] || ! "$here/.venv/bin/python" -c "import numpy, soundfile, pyloudnorm" 2>/dev/null; then
+  "$here/bin/setup-analysis" >&2 || exit 1
+fi
+exec "$here/.venv/bin/python" "$@"

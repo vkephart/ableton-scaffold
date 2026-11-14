@@ -122,13 +122,59 @@ Repeated audio through an amp or tape simulation is not sample-identical: two pa
 the same file region through one bass chain correlated about 0.5. Before reading a low
 correlation as wrong content, measure a control pair the edit did not touch.
 
+### sample.py and measure.py
+
+The sampling tool. `sample.py` captures a bar range of the Arrangement from one or more
+tracks (or the master) and hands the files to `measure.py`, which is offline and needs no
+Live. Use these before writing a scratch script: every session that measured used to
+rebuild the environment, the transport handling and the arithmetic.
+
+```bash
+bin/analysis-python bridge/sample.py --from 21 --to 29 --source "<Event track>" --source "<Other>" --anchor 23
+bin/analysis-python bridge/measure.py event.aif --against other.aif --tempo 120 --anchor-beat 88
+bin/analysis-python bridge/measure.py --self-test
+```
+
+What `sample.py` handles so nobody has to again:
+
+- Everything slow (creating, routing and arming the temporary tracks, the mixer read) is
+  done before the transport starts. Each OSC round trip takes longer while Live plays.
+- It starts with `/live/song/start_playing`. `continue_playing` resumes from where the
+  transport last stopped and ignores a playhead that was set while stopped: the first run
+  recorded the wrong 20 seconds that way. If playback still begins elsewhere, it jumps the
+  playhead while playing, which does land.
+- Launch quantization, the loop and the metronome are switched off for the pass and put
+  back. Arm states and the playhead are put back, and the track count is checked.
+- A signal or a timeout raises, so the cleanup still runs. A bare `signal.alarm` would
+  leave armed temporary tracks in the set.
+- It refuses to run if the transport is playing, Arrangement record is on, or Back to
+  Arrangement is lit.
+- Placement comes from the audio: `--anchor` pins the event's first sound to the ruler
+  position its note sits on. The playhead-derived position is printed beside it as a check.
+
+What `measure.py` reports: sample peak, loudest 50 ms RMS, momentary (400 ms) and
+short-term (3 s) loudness maxima in LUFS, the start of the sound, the time after the start
+at which it has fallen 6, 10, 20, 30, 40 and 60 dB for good, a fitted decay rate, and, with
+`--against`, each beat of the event beside the other files. A fall the file ends before
+reaching is "not reached", never extrapolated. Integrated loudness is printed but is not
+meaningful for a single hit. `--self-test` checks the loudness against a 997 Hz sine (one
+channel at full scale is -3.01 LUFS) and the fall times against noise decaying at 20 dB/s.
+
+Reading the result:
+
+- Levels are at the point in the chain named by `--channel` (Post Mixer by default), so a
+  track inside a group is read before the group's fader.
+- A sampled instrument that alternates samples gives a different hit each pass. Two passes
+  of one cymbal differed by about 2 dB in peak and half a second at the -20 dB mark.
+- Fall times map onto an envelope: the time to stay within a few dB is a hold or sustain
+  time, the rest is the release.
+
 ### spectrum.py
 
 Offline reading of a capture: levels, stereo correlation per band, band powers, centroid,
 strongest peaks, brightness and level variation over time, and with `--track-partial` the
 pitch and amplitude modulation of one partial. `--png` writes a spectrogram plus long-term
-average spectrum for `mix/`. Needs `numpy scipy soundfile matplotlib`, listed as optional
-in `requirements.txt`.
+average spectrum for `mix/`. Run it with `bin/analysis-python`.
 
 ```bash
 python3 bridge/spectrum.py /tmp/pad.aif --against /tmp/mix.aif --track-partial 440 --png mix/<name>-before.png

@@ -1,0 +1,19 @@
+#!/bin/bash
+# Build (or repair) the scaffold's permanent analysis environment at <scaffold>/.venv.
+# Run once per machine. After it, use bin/analysis-python in place of python3 for anything
+# that reads audio: bridge/sample.py, bridge/measure.py, bridge/spectrum.py.
+set -euo pipefail
+here="$(cd "$(dirname "$0")/.." && pwd)"
+py="${ANALYSIS_BASE_PYTHON:-}"
+if [ -z "$py" ]; then
+  for c in /usr/local/bin/python3 /opt/homebrew/bin/python3 python3; do
+    if command -v "$c" >/dev/null 2>&1; then py="$c"; break; fi
+  done
+fi
+[ -n "$py" ] || { echo "no python3 found; set ANALYSIS_BASE_PYTHON" >&2; exit 1; }
+if [ ! -x "$here/.venv/bin/python" ]; then
+  "$py" -m venv "$here/.venv"
+fi
+"$here/.venv/bin/python" -m pip install --quiet --upgrade pip
+"$here/.venv/bin/python" -m pip install --quiet -r "$here/requirements-analysis.txt"
+"$here/.venv/bin/python" -c "import numpy, scipy, soundfile, matplotlib, pyloudnorm, pythonosc, yaml; print('analysis environment ready:', '$here/.venv')"
