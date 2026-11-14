@@ -223,7 +223,12 @@ down.
   cycles in it can advance the box more than once, and so can a single full cycle: on one
   drum machine a one-cycle square (up, down, back to zero) gave an uneven, doubled pattern,
   and a pulse of one polarity only (the first half of a low square, gated by a note half the
-  cycle long) stepped it cleanly, one step per pulse. Build the one-polarity pulse first.
+  cycle long) stepped it evenly. Build the one-polarity pulse first. Even is not the same as
+  one step per pulse: some boxes take two steps per pulse, and a hat on every step sounds
+  clean at double speed. Count it, either by the step lights per bar or by recording a few
+  bars and counting onsets per pulse, before writing down the rate. A pattern with a hit on
+  every step also hides the lateness modulo the hit spacing; measure latency with one hit
+  per bar.
 
 **Reads**
 
