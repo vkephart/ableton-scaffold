@@ -285,3 +285,24 @@ Verify a write on the box's own panel, not on the plugin window. The edit buffer
 saved until it is stored on the hardware, and an undo in Live sends the old values back
 (see `bridge/README.md`), so read the editor back and quote the values before anything is
 stored.
+
+## Plugins that go quiet after an operating system upgrade
+
+A plugin that cannot load shows in Live as a disabled device, with no error dialog, and the
+set keeps its saved state. Over OSC it still lists its Configure-mode parameters, so nothing
+looks wrong from the bridge. Three checks, in this order:
+
+1. Live's log (`~/Library/Preferences/Ableton/Live <version>/Log.txt`): search for
+   `Restore 1 failed` followed by the plugin's name. A plugin that loads logs `Restored:`.
+   The dates show when it started, and the `Init: OS:` line at each start shows which system
+   version Live was running on.
+2. The plugin binary's architecture: `lipo -archs` on the file inside the component's
+   `Contents/MacOS`. An `x86_64`-only binary on an Apple silicon Mac needs Rosetta even when
+   the host runs native.
+3. Whether Intel code runs at all: `arch -x86_64 /usr/bin/true`. "Bad CPU type in executable"
+   means Rosetta is not installed. A major macOS upgrade can leave it uninstalled, and no
+   prompt appears when a plugin, as opposed to an application, needs it.
+
+The fix is the user's to run: reinstall Rosetta, or better, update the plugin to a native
+build, since Rosetta is being withdrawn. Then say what in the mix has been silent since the
+date in the log, because everything balanced after it was balanced without that plugin.
