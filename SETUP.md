@@ -226,6 +226,18 @@ rm -rf reference/manuals
 ln -s ~/Manuals ~/music-studio/ableton-scaffold/reference/manuals
 ```
 
+**Reading a manual without a PDF renderer.** If page reads fail because poppler is not
+installed, macOS can still give the text through its own PDFKit, with nothing to install:
+
+```bash
+osascript -l JavaScript bin/pdf-text.js "reference/manuals/<manual>.pdf" /tmp/manual.txt
+```
+
+It writes every page's text with `=====PAGE n=====` markers, so the contents page leads to
+the right lines. It gives no pictures: for a panel's layout, ask for a screenshot. Do not
+quote control names from memory when this takes ten seconds. A hand-rolled regex over the
+PDF's compressed streams does not finish on a 10 MB manual.
+
 `reference/manuals` is gitignored as a symlink, so nothing about your local manuals folder
 is committed. What belongs in it, and why the agents insist on it, is in
 `reference/README.md`.
