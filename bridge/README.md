@@ -135,6 +135,10 @@ bin/analysis-python bridge/measure.py event.aif --against other.aif --tempo 120 
 bin/analysis-python bridge/measure.py --self-test
 ```
 
+It refuses to start while the transport is running: stop playback, then run it. The
+files Live writes into the project's recordings folder are left there; when the reading is
+filed, check them with `refs.py` (below) and clear them out.
+
 What `sample.py` handles so nobody has to again:
 
 - Everything slow (creating, routing and arming the temporary tracks, the mixer read) is
@@ -170,6 +174,23 @@ Reading the result:
   of one cymbal differed by about 2 dB in peak and half a second at the -20 dB mark.
 - Fall times map onto an envelope: the time to stay within a few dB is a hold or sustain
   time, the rest is the release.
+
+### refs.py
+
+Does anything in the set play this file? Run it before deleting audio from a project,
+capture files included.
+
+```bash
+python3 bridge/refs.py "CAP-" --als-dir "<project folder>"
+```
+
+It reads the file path of every Arrangement audio clip and every Session clip in the open
+set, and with `--als-dir` counts mentions in every saved set under a folder, backups
+included. Read-only. Exit status 0 means nothing references the text, 1 means something
+does, 2 means part of the open set did not answer. It does not see samples loaded inside
+instruments or Live's undo history. Test it once with a file known to be in use, so a
+clean result is known to mean something. Even with a clean result, move files to the
+Trash in a named folder in place of removing them: a wrong answer then costs nothing.
 
 ### spectrum.py
 
@@ -293,6 +314,19 @@ down.
   and say that is where they came from.
 - Soundtoys plugins publish `Bypass` as 1 when inserted, and 1 means bypassed. Set it to
   0. EchoBoy's note value and sync are settable only in its own window in practice.
+- Addictive Drums 2 publishes only `Device On` and one send level to Live. Every kit,
+  cymbal, level, pitch and envelope setting is made in its window by the person at the
+  desk, so give exact control names from the manual and ask for the values back. Facts
+  that cost time once: cymbals have no close-mic channel, they sound only through the
+  overhead and room mics, so a cymbal's level is the Kit Piece Volume slider in its slot
+  on the Kit page or its own `OH Level` and `Room Level` on the Edit page; the Edit
+  page's darkened sections switch on when a control in them is moved; Shift gives fine
+  steps; a kit piece swapped from the slot's own menu kept that slot's Edit settings (seen
+  once); loading a preset swaps the kit pieces too. The key map has second keys marked
+  "(dbl)" for common hits (46 is the same Cymbal 1 hit as 77), so a note found on the
+  lower key is not a mistake. Two captures of the same note differed by about 2 dB in peak
+  and half a second in decay, most likely alternating samples: say so when reporting one
+  pass, and `No Alts` in the Kit Piece Controls or a print to audio is the cure.
 - A note read of several thousand notes gets no reply. Read in windows of about 16 beats.
 - The saved set file answers what the bridge cannot, with nothing touched. An `.als` is
   gzip XML. Copy it out of the project, unzip the copy and parse that. It holds every

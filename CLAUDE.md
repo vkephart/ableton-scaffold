@@ -112,6 +112,17 @@ loose drum-map files all disagreed with the vendor keymap and with each other, w
 real keymap sat unused in the manuals folder the whole time. Programming from any of them
 would have written onto the wrong articulations throughout.
 
+**Name a control by where it is, and name the lookalike it is not.** "The cymbal's own
+volume" sent a user to ask twice which of three level controls was meant. Give the page,
+the section, the position on screen and the label, and say which neighbouring control to
+leave alone. When the manual gives no units or range for it, say that too, and give the
+fallback in controls that do read in real units.
+
+**A report that something was saved or kept is checked where it can be.** A set said to
+be saved still showed the old time on disk hours later. Read the file's time and say what
+it shows; do not argue and do not assume. Likewise a note, level or label found changed
+since it was written is reported, not put back: the person at the desk may have moved it.
+
 **A manual whose text will not extract is still readable; read the page itself.** Some
 hardware manuals are one poster-sized page per language with a text layer that extracts as
 garbage. Reading the PDF directly, as a page image, gave every sentence. On one song a
