@@ -59,7 +59,10 @@ def scan_open_set(text):
                     continue
                 counts["session"] += 1
                 path = ask("/live/clip/get/file_path", index, slot, timeout=2)
-                if path and text in str(path[-1]):
+                if path is None:
+                    # A MIDI clip does reply, with an empty value, so silence is a timeout.
+                    unanswered.append((name, "session slot %d" % slot))
+                elif text in str(path[-1]):
                     hits.append((name, "Session slot %d" % slot, str(path[-1])))
         return len(names), counts, hits, unanswered
     finally:
