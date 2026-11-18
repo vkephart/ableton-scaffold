@@ -175,6 +175,42 @@ Reading the result:
 - Fall times map onto an envelope: the time to stay within a few dB is a hold or sustain
   time, the rest is the release.
 
+### take.py
+
+What was played in a recorded take, and on which beat, read from the file the clip plays.
+No capture, no playback, and no interface needed: it is the way to answer "did I play the
+notes I meant, where I meant them" while the session is busy or the rig is off.
+
+```bash
+bin/analysis-python bridge/take.py --live "<Track>" <clip start beat> --from-bar 17 --to-bar 24
+bin/analysis-python bridge/take.py take.aif --tempo 120 --clip-beat 64 --file-sample 84943.8 --drift 4
+bin/analysis-python bridge/take.py --self-test
+```
+
+For every struck onset it prints the ruler position (nearest sixteenth), the distance from
+that grid line in milliseconds (+ is late), the peak, and the strongest partials as note
+name, MIDI number and cents. `--drift N` follows each onset's strongest partial for N
+beats, half a beat at a time: a vibrato arm, a bend, a string resting sharp. `--live`
+takes the file, the tempo and the placement from the open set through the extension's
+`/live/arrangement_clip/get/audio`.
+
+What it will and will not tell you:
+
+- The file is the take before the track's devices. Pitch and timing hold through an amp or
+  an echo. Level, ring length and anything a delay adds do not: those need a capture or an
+  export.
+- An onset is listed only if it shows an energy step, whole band and above 3 kHz. A
+  spectral-flux detector on its own reported 52 soft "strokes" at near-sixteenth spacing
+  inside the rings of 12 picked notes, with believable grid positions and a smooth run of
+  levels. They were the ring fluctuating by under a decibel. A count of strokes, a tempo
+  of a run or a timing spread taken from such candidates describes nothing that was
+  played. `--all` lists them, marked.
+- A listed pitch can be an overtone of the note meant, or a neighbouring string that was
+  brushed. Read the set of partials, not the top line.
+- A stretched clip stops the script: its file does not sit on the grid at the set's tempo.
+- Timing is good to about 10 ms. An offset of an eighth or a quarter is a played beat, not
+  latency.
+
 ### refs.py
 
 Does anything in the set play this file? Run it before deleting audio from a project,
@@ -380,6 +416,25 @@ fire switches to playback at the next launch-quantize boundary. With quantizatio
 a fire sent one to three beats before the target length ends the clip exactly. Restore the
 set's own quantization afterwards. Stop MIDI clips on the same bar line and confirm the
 meter reads zero before starting, or a hung note's release lands in the take.
+
+**Plugins that live outside the computer**
+
+- Plugins hosted on an audio interface's processor go offline when the interface is
+  switched off or unplugged. The set still opens and the bridge still reads faders, sends
+  and native devices, but any track through one of those plugins sounds and measures
+  different, and Live falls back to another audio device. Before the interface goes off,
+  export every track and return as its own file with the processing printed (Rendered
+  Track: All Individual Tracks). Mix, level and tone questions can then be answered from
+  the files with nothing switched on.
+- A file under `Samples/Recorded` is the input as recorded, before the track's devices. It
+  answers pitch and timing. It does not answer tone.
+- A third-party amp or instrument plugin may publish only unassigned placeholders
+  (`Param 1` to `Param 16`, all zero) until parameters are assigned inside the plugin.
+  Its settings then have to come from a screenshot or the user, and the chain file should
+  say so in place of a table of zeros.
+- Whether a plugin is licensed cannot be read from disk when the vendor's installer puts
+  every plugin on the machine. Ask, or have the user open the vendor's own licence
+  manager.
 
 **The reply port**
 

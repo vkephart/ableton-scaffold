@@ -262,6 +262,28 @@ opportunities were the unbuilt plan, not edits to the cell. Quote a filed plan e
 when a proposal leans on it: the same review first offered a pattern as "the filed one"
 that the filing's own wording excluded.
 
+**A text tab places a note by its first character, so the header has to mark the
+off-beats.** A sketch tab put each harmonic on the "and" of 2, as a four-character token
+whose digits fell under the "3" of a header that showed only the beats. All twelve notes
+were recorded on beat 3. Mark every "and" in the header, say in the legend that a note
+sounds where its token begins, and state the onset in words once ("every note is on the
+and of 2"). When a take comes back consistently one subdivision off, look at the page
+before the playing.
+
+**A detector's candidates are not a performance until a second measure agrees.** An onset
+detector run over a take of sparse ringing notes returned five times as many onsets as
+were played, at plausible grid positions. A description of "runs" and their timing was
+nearly reported from them. An energy step across each candidate settled it in one pass
+(`bridge/take.py` now requires one). Before describing what someone played from a
+measurement, ask what else would produce the same numbers and test for that.
+
+**When a technique stops working, ask what changed on the instrument before doubting the
+notation.** A natural harmonic that will not speak is as often the pickup or the picking
+hand as the fret: a pickup sitting under one of that harmonic's dead spots hears almost
+none of it (a neck pickup near a quarter of the string length, for the harmonic two
+octaves up), and picking over the same spot does not excite it. The fret positions hold
+in any tuning.
+
 **Do not "fix" what was chosen deliberately.** Out-of-key notes, an unresolved ending, a
 drumless outro and an empty track are as likely to be intentional as they are to be
 mistakes. Ask before correcting anything that reads as a deviation.
