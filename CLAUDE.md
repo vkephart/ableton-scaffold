@@ -268,7 +268,11 @@ whose digits fell under the "3" of a header that showed only the beats. All twel
 were recorded on beat 3. Mark every "and" in the header, say in the legend that a note
 sounds where its token begins, and state the onset in words once ("every note is on the
 and of 2"). When a take comes back consistently one subdivision off, look at the page
-before the playing.
+before the playing. When the placement is the point of the page, drop the text tab for a grid
+with one cell per subdivision, so a note occupies exactly one count, and put a pulse the
+player already hears (snare, bass) on rows under it to count against. Give each onset in
+ruler numbers as well. Generate the grid from a note list and check the cell index of
+every note in the written file.
 
 **A detector's candidates are not a performance until a second measure agrees.** An onset
 detector run over a take of sparse ringing notes returned five times as many onsets as
