@@ -69,6 +69,32 @@ and the level that plays is file plus gain. Map song beats to file samples throu
 marker can read 2.0 beats while the clip plays from sample 0, and a measurement taken from
 the marker lands two beats out and still looks like audio.
 
+### Slide, in the same module
+
+| Address | Reply |
+|---|---|
+| `/live/arrangement_clip/slide <track> <start_time> <beats>` | `(track, start, then start_time, end_time, start_marker, end_marker, loop_start, loop_end before, the same six after, "ok" or what Live refused)` |
+
+Moves what an unlooped Arrangement clip plays without moving its edges on the timeline.
+`beats` above zero plays the content that much earlier; the same call with the sign turned
+undoes it. For an unlooped clip `loop_start` and `loop_end` are the clip's own start and
+end in the file, so they move with the markers. Use it when a take sits a subdivision late
+and a neighbouring clip touches its edge: moving the clip itself would overwrite the
+neighbour, muted or not. The content that slides in at the far end must exist in the file;
+check the file's length first. Verified on Live 11.3 with a warped audio clip: edges
+unchanged, markers and the sample at the start marker moved by the amount asked. A looped
+clip is refused.
+
+### Master chain, read only, in the same module
+
+| Address | Reply |
+|---|---|
+| `/live/master/get/devices` | `(name, class_name, is_active)` per device, then `"volume"` and the fader's string |
+| `/live/master/get/device/params <device>` | `(device name, then name, value string per parameter)` |
+
+Stock AbletonOSC addresses devices by track index and the Master has none. Read these
+before advising anything for the Master, and before a bounce.
+
 ### Clip envelopes (Session clips), in the same module
 
 Stock AbletonOSC cannot write automation. These live in `arrangement_clip.py` only because

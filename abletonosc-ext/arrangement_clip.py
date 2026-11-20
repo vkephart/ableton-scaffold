@@ -470,6 +470,71 @@ class ArrangementClipHandler(AbletonOSCHandler):
             clip.gain = gain
             return (track_index, start, float(clip.gain), str(_attr(clip, "gain_display_string", "")))
 
+        #--------------------------------------------------------------------------------
+        # Slide (2026-11-20). Moves what an unlooped Arrangement clip plays without moving
+        # its edges on the timeline, so a take recorded a subdivision late can be pulled
+        # early when a neighbouring clip sits against it. beats > 0 plays the content that
+        # much earlier. For an unlooped clip loop_start and loop_end are the clip's own
+        # start and end in the file; the markers are moved with them. Returns the edges and
+        # markers before and after, and any property Live refused. Undo is the same call
+        # with the sign turned.
+        #--------------------------------------------------------------------------------
+        def arrangement_clip_slide(params):
+            track_index, start, beats = int(params[0]), float(params[1]), float(params[2])
+            clip = find_clip_by_start_time(track_index, start)
+            if clip is None:
+                return (track_index, start, "no clip at that start")
+            if bool(clip.looping):
+                return (track_index, start, "looped clip, not slid")
+
+            def state():
+                return (float(clip.start_time), float(clip.end_time), float(clip.start_marker),
+                        float(clip.end_marker), float(clip.loop_start), float(clip.loop_end))
+
+            before = state()
+            sm, em, ls, le = before[2], before[3], before[4], before[5]
+            steps = [("end_marker", max(em, le + beats)), ("loop_end", le + beats),
+                     ("loop_start", ls + beats), ("start_marker", sm + beats)]
+            if beats < 0:
+                steps = [("start_marker", sm + beats), ("loop_start", ls + beats),
+                         ("loop_end", le + beats)]
+            refused = []
+            for name, value in steps:
+                try:
+                    setattr(clip, name, value)
+                except Exception as e:
+                    refused.append("%s: %s" % (name, e))
+            return (track_index, start) + before + state() + ("; ".join(refused) or "ok",)
+
+        self.osc_server.add_handler("/live/arrangement_clip/slide", arrangement_clip_slide)
+
+        #--------------------------------------------------------------------------------
+        # Master chain, read only (2026-11-20). Stock AbletonOSC addresses devices by track
+        # index and the Master has none. get/devices returns (name, class_name, is_active)
+        # per device; get/device/params returns (name, value string) per parameter.
+        #--------------------------------------------------------------------------------
+        def master_get_devices(params):
+            out = []
+            for d in self.song.master_track.devices:
+                active = True
+                try:
+                    active = bool(d.parameters[0].value)
+                except Exception:
+                    pass
+                out += [str(d.name), str(d.class_name), active]
+            mixer = self.song.master_track.mixer_device
+            return tuple(out) + ("volume", str(mixer.volume))
+
+        def master_get_device_params(params):
+            d = self.song.master_track.devices[int(params[0])]
+            out = [str(d.name)]
+            for p in d.parameters:
+                out += [str(p.name), str(p)]
+            return tuple(out)
+
+        self.osc_server.add_handler("/live/master/get/devices", master_get_devices)
+        self.osc_server.add_handler("/live/master/get/device/params", master_get_device_params)
+
         self.osc_server.add_handler("/live/arrangement_clip/get/audio", arrangement_clip_get_audio)
         self.osc_server.add_handler("/live/arrangement_clip/set/gain", arrangement_clip_set_gain)
 
