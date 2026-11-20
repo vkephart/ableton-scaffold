@@ -455,6 +455,31 @@ meter reads zero before starting, or a hung note's release lands in the take.
   every plugin on the machine. Ask, or have the user open the vendor's own licence
   manager.
 
+**A mastering suite on the Master, for a listening bounce.** Learned with iZotope Ozone 12
+Advanced on Live 11.3.
+
+- Read the Master first (`/live/master/get/devices`). An empty Master and an old loudness
+  reading mean the target is a guess until a bounce is measured (`bounce.py`).
+- For a bounce meant for judging the mix, the limiter alone is the honest setting: the
+  other modules re-tone and re-balance. If the user wants some width, that is their call;
+  keep it small and say what it widens (whatever is already stereo, usually the returns).
+- Ozone 12's Master Assistant has a Custom flow: a module list with Disable All, a
+  Loudness knob, Output Level and a True Peak switch. After it runs, the Assistant view's
+  Width Match is the Imager's Amount. The band handles keep the full values the Assistant
+  chose; the coloured bars beside them show what is applied. The plugin published one
+  parameter to Live unasked, `IMG: Global Amount`, so that scaling can be read back.
+- Do not name the loudest section from the arrangement. Ask the user's ear or measure a
+  bounce by section. The bounce with the limiter on cannot answer it afterwards, since the
+  limiter evens the sections out.
+- A bounce can land a couple of LU from the target the user was given. Never having seen
+  the loudness control in a screenshot is the gap to close before the export, not after.
+- Live's export dialog keeps its own sample rate, which can differ from the set's
+  recordings. Check it against a recorded file's rate, and render a few bars past the end
+  locator: tails were still at speaking level a full bar after it.
+- Live's export writes a zero-byte file named for the rendered track in the project's
+  recorded-samples folder while it renders; the bounce itself appears at the target only
+  when it is done. Watch the target folder for a file whose size has stopped changing.
+
 **The reply port**
 
 A hung OSC script keeps UDP 11001 bound and every later client fails with "Address already
