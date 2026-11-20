@@ -342,6 +342,7 @@ and the extra handlers they need are in `abletonosc-ext/`.
 ```
 bridge/             Python scripts talking to AbletonOSC and AbletonMCP
 abletonosc-ext/     AbletonOSC handler modules stock does not ship
+sketch/             browser instruments for sketching away from Ableton (see sketch/README.md)
 .claude/agents/     specialist agent definitions
 .claude/commands/   slash commands
 templates/song/     starting files for a new track repo
