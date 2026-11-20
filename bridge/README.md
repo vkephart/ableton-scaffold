@@ -211,6 +211,25 @@ What it will and will not tell you:
 - Timing is good to about 10 ms. An offset of an eighth or a quarter is a played beat, not
   latency.
 
+### bounce.py
+
+What a bounced mix came out at: integrated loudness, the short-term maximum and where it
+is, sample and true peak per side, left against right, and width (side against mid, and
+the correlation of the two channels). With sections, the same per section, so the loudest
+section is a measurement.
+
+```bash
+bin/analysis-python bridge/bounce.py mix.wav
+bin/analysis-python bridge/bounce.py mix.wav --tempo 120 --section Intro:0 --section Verse:32 --section End:256
+bin/analysis-python bridge/bounce.py mix.wav --live      # tempo and locators from the open set
+bin/analysis-python bridge/bounce.py --self-test
+```
+
+A limited bounce cannot say how hard the limiter worked or which section was loudest going
+in: the limiter evens the sections out. For that, measure a second bounce with the limiter
+bypassed and compare the two section by section. Find the loudest section this way before
+pointing a mastering assistant at one; a guess from the arrangement was wrong once.
+
 ### refs.py
 
 Does anything in the set play this file? Run it before deleting audio from a project,
