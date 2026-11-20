@@ -6,7 +6,9 @@
 // Renders the loop offline through the same engine the page plays live (full mix and
 // each part alone) and writes the WAVs to <out-dir> for bridge/measure.py and
 // bridge/spectrum.py. Then presses Play at phone size and reports whether the audio
-// context ran, the playhead moved and the console stayed clean. Writes a screenshot.
+// context ran, the playhead moved and the console stayed clean, and runs the page's own
+// sound check: output meter, test tone, and the loop rendered to a file player. Writes a
+// screenshot.
 //
 // A pass here says the page works in Chromium. It says nothing about how it sounds,
 // and nothing about Safari on iOS: both of those are checked by ear on the device.
@@ -48,8 +50,27 @@ const { chromium } = require('playwright');
   if (a.ctx !== 'running') problems.push('audio context is ' + a.ctx);
   if (!a.playing || a.beat === b.beat) problems.push('transport did not advance');
   if (a.sideScroll) problems.push('page scrolls sideways at 390 px');
-  await page.screenshot({ path: path.join(out, 'phone.png'), fullPage: true });
+  const meter = await page.evaluate(() => document.getElementById('meter-out').textContent);
+  console.log('meter while playing:', meter);
+  if (!/dBFS/.test(meter)) problems.push('meter shows "' + meter + '" while playing');
   await page.click('#play');
+
+  await page.locator('#crackle').fill('-61');
+  await page.waitForTimeout(900);
+  const quiet = await page.evaluate(() => document.getElementById('meter-out').textContent);
+  await page.click('#tone-test');
+  await page.waitForTimeout(300);
+  const tone = await page.evaluate(() => document.getElementById('meter-out').textContent);
+  console.log('meter stopped:', quiet, '| during test tone:', tone);
+  if (!/dBFS/.test(tone)) problems.push('test tone did not reach the meter');
+
+  await page.click('#file-test');
+  await page.waitForSelector('#file-slot audio', { timeout: 60000 });
+  await page.waitForFunction(() => document.querySelector('#file-slot audio').duration > 0, null, { timeout: 15000 });
+  const file = await page.evaluate(() => { const a = document.querySelector('#file-slot audio'); return { duration: a.duration, paused: a.paused }; });
+  console.log('file player:', JSON.stringify(file));
+  if (!(file.duration > 20)) problems.push('rendered file is ' + file.duration + ' s');
+  await page.screenshot({ path: path.join(out, 'phone.png'), fullPage: true });
   await browser.close();
 
   if (problems.length) { console.log('FAIL\n' + problems.join('\n')); process.exit(1); }

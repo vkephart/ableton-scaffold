@@ -137,6 +137,21 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   border-top: 1px solid var(--line); padding-top: 10px; margin: 0;
 }
 #status.bad { color: var(--accent); }
+.check {
+  flex-basis: 100%;
+  display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+}
+.meter { height: 10px; background: var(--line); border-radius: 2px; overflow: hidden; }
+#meter-fill { height: 100%; width: 0; background: var(--ink); }
+#meter-out {
+  font-family: var(--font-mono); font-size: 13px; font-variant-numeric: tabular-nums;
+  min-width: 92px; text-align: right;
+}
+.check .btns { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
+#file-slot { grid-column: 1 / -1; font-size: 14px; color: var(--muted); }
+#file-slot:empty { display: none; }
+#file-slot audio { display: block; width: 100%; margin-top: 6px; }
+.check .hint { grid-column: 1 / -1; }
 
 /* Lanes */
 .lanes { display: flex; flex-direction: column; gap: 10px; }
@@ -161,7 +176,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   font-family: var(--font-mono); font-size: 13px; font-variant-numeric: tabular-nums;
   width: 56px; text-align: right; flex: none; color: var(--muted);
 }
-.mute {
+.mute, .btn {
   flex: none;
   border: 1px solid var(--line); background: transparent; border-radius: 5px;
   font-family: var(--font-label); font-size: 14px; font-weight: 600;
@@ -273,7 +288,7 @@ td { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
 
   <header class="top">
     <h1>Sketch Kit</h1>
-    <span class="tag">proof 1</span>
+    <span class="tag">proof 2</span>
     <div class="reels" aria-hidden="true">
       <svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="15" cy="15" r="13"/><circle cx="15" cy="15" r="3.5"/><path d="M15 2v9.5M15 18.5V28M3.7 21.5l8.3-4.8M18 13.3l8.3-4.8M3.7 8.5l8.3 4.8M18 16.7l8.3 4.8"/></svg>
       <svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="15" cy="15" r="13"/><circle cx="15" cy="15" r="3.5"/><path d="M15 2v9.5M15 18.5V28M3.7 21.5l8.3-4.8M18 13.3l8.3-4.8M3.7 8.5l8.3 4.8M18 16.7l8.3 4.8"/></svg>
@@ -291,6 +306,16 @@ td { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
       <div class="readout"><span class="lbl">Chords</span><span class="num" id="chord">Dm9  G13  Cmaj9  A7</span></div>
     </div>
     <p id="status" role="status">Tap Play to start the audio. This is a test loop, not a song.</p>
+    <div class="check" aria-label="Sound check">
+      <div class="meter" role="img" aria-label="Output level"><div id="meter-fill"></div></div>
+      <output id="meter-out">no signal</output>
+      <div class="btns">
+        <button type="button" class="btn" id="tone-test">Test tone</button>
+        <button type="button" class="btn" id="file-test">Play as a file</button>
+      </div>
+      <div id="file-slot"></div>
+      <p class="hint">Sound check. If the meter moves and you hear nothing, the device is muting this page: check the silent switch, the volume and any Bluetooth output. If the meter stays still, the audio engine is not running here. Play as a file renders the loop and hands it to the system player, which usually ignores the silent switch.</p>
+    </div>
   </section>
 
   <section class="lanes" aria-label="Parts">
@@ -502,6 +527,10 @@ function buildEngine(ctx, seed) {
   mix.connect(sat); sat.connect(satTrim); satTrim.connect(wob); wob.connect(tone); tone.connect(hp);
   hp.connect(comp); comp.connect(makeup); makeup.connect(clip); clip.connect(ctx.destination);
   E.makeup = makeup;
+  if (ctx.createAnalyser) {
+    E.analyser = ctx.createAnalyser(); E.analyser.fftSize = 2048;
+    clip.connect(E.analyser);
+  }
 
   /* part buses. Kick ducks bass and keys through the pump gain. */
   const pump = gain(1); pump.connect(mix);
@@ -695,7 +724,9 @@ async function render(opts) {
   const st = Object.assign({}, state, opts.state || {});
   const spb = 60 / st.tempo, loops = opts.loops || 1, sr = opts.sampleRate || 44100;
   const secs = loops * SONG.length_beats * spb + (opts.tail == null ? 2.5 : opts.tail);
-  const oc = new OfflineAudioContext(2, Math.ceil(secs * sr), sr);
+  const OC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  if (!OC) throw new Error('this browser cannot render audio offline');
+  const oc = new OC(2, Math.ceil(secs * sr), sr);
   const E = buildEngine(oc, 7);
   E.apply(st, opts.solo);
   const jit = rng(11);
@@ -721,9 +752,15 @@ async function render(opts) {
     peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]));
     dv.setInt16(44 + i * 4, l * 32767, true); dv.setInt16(46 + i * 4, r * 32767, true);
   }
+  const res = { peak, seconds: secs, sampleRate: sr };
+  if (opts.blob) res.blob = new Blob([bytes], { type: 'audio/wav' });
+  else res.wavBase64 = toBase64(bytes);
+  return res;
+}
+function toBase64(bytes) {
   let bin = ''; const CH = 0x8000;
   for (let i = 0; i < bytes.length; i += CH) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
-  return { peak, seconds: secs, sampleRate: sr, wavBase64: btoa(bin) };
+  return btoa(bin);
 }
 
 function scheduleNote(E, partId, n, t, spb, jit) {
@@ -754,20 +791,29 @@ function describeAudio() {
   if (ctx.state === 'running') {
     const lat = (ctx.outputLatency || 0) + (ctx.baseLatency || 0);
     setStatus('Audio running at ' + (ctx.sampleRate / 1000).toFixed(1) + ' kHz' +
-      (lat ? ', output latency ' + Math.round(lat * 1000) + ' ms.' : '.'));
+      (lat ? ', output latency ' + Math.round(lat * 1000) + ' ms' : '') +
+      ', clock ' + ctx.currentTime.toFixed(1) + ' s.');
   } else {
     setStatus('Audio is ' + ctx.state + '. Tap Play or a pad to start it.', true);
+  }
+}
+let silentEl = null;
+function unlock() {
+  // Runs inside every tap, click and key press. iOS only starts audio from those.
+  if (silentEl && silentEl.paused) { const p = silentEl.play(); if (p && p.catch) p.catch(() => {}); }
+  if (ctx && ctx.state !== 'running') {
+    const p = ctx.resume();
+    if (p && p.then) p.then(describeAudio).catch(e => setStatus('Audio could not start: ' + e.message + '. Tap Play again.', true));
   }
 }
 function ensureAudio() {
   if (!ctx) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) { setStatus('This browser has no Web Audio, so the kit cannot make sound here.', true); return false; }
-    try {
-      // iOS: ask for the playback session so the silent switch does not mute the page
-      if (navigator.audioSession) navigator.audioSession.type = 'playback';
-      else keepAwakeAudio();
-    } catch (e) { /* not fatal */ }
+    // iOS mutes Web Audio with the silent switch unless the page holds a playback session.
+    // Ask for one both ways: the audio session API, and a looping silent media element.
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* not fatal */ }
+    try { silentEl = silentAudio(); } catch (e) { /* not fatal */ }
     try { ctx = new AC({ latencyHint: 'interactive' }); } catch (e) { ctx = new AC(); }
     try {
       engine = buildEngine(ctx, 7);
@@ -777,24 +823,79 @@ function ensureAudio() {
       ctx = null; return false;
     }
     ctx.onstatechange = describeAudio;
+    setInterval(describeAudio, 500);
+    requestAnimationFrame(meterLoop);
   }
-  if (ctx.state !== 'running') {
-    ctx.resume().then(describeAudio).catch(e => setStatus('Audio could not start: ' + e.message + '. Tap Play again.', true));
-  } else describeAudio();
+  unlock();
+  describeAudio();
   return true;
 }
-function keepAwakeAudio() {
-  // Older iOS: a looping silent media element moves the page to the playback session.
+function silentAudio() {
   const n = 4000, b = new Uint8Array(44 + n), dv = new DataView(b.buffer);
   const wr = (o, s) => { for (let i = 0; i < s.length; i++) b[o + i] = s.charCodeAt(i); };
   wr(0, 'RIFF'); dv.setUint32(4, 36 + n, true); wr(8, 'WAVEfmt '); dv.setUint32(16, 16, true);
   dv.setUint16(20, 1, true); dv.setUint16(22, 1, true); dv.setUint32(24, 8000, true); dv.setUint32(28, 8000, true);
   dv.setUint16(32, 1, true); dv.setUint16(34, 8, true); wr(36, 'data'); dv.setUint32(40, n, true);
   b.fill(128, 44);
-  const a = new Audio('data:audio/wav;base64,' + btoa(String.fromCharCode.apply(null, b)));
-  a.loop = true;
-  const p = a.play(); if (p && p.catch) p.catch(() => {});
+  const a = new Audio('data:audio/wav;base64,' + toBase64(b));
+  a.loop = true; a.preload = 'auto';
+  a.setAttribute('playsinline', ''); a.setAttribute('x-webkit-airplay', 'deny');
+  return a;
 }
+['touchend', 'pointerup', 'click', 'keydown'].forEach(ev => document.addEventListener(ev, unlock, true));
+
+/* ------------------------------------------------------------------ sound check */
+let meterBuf = null, meterHold = -120;
+function meterLoop() {
+  requestAnimationFrame(meterLoop);
+  if (!engine || !engine.analyser) return;
+  const an = engine.analyser;
+  let peak = 0, bad = false;
+  if (an.getFloatTimeDomainData) {
+    if (!meterBuf) meterBuf = new Float32Array(an.fftSize);
+    an.getFloatTimeDomainData(meterBuf);
+    for (let i = 0; i < meterBuf.length; i++) {
+      const v = meterBuf[i];
+      if (v !== v) bad = true; else if (Math.abs(v) > peak) peak = Math.abs(v);
+    }
+  } else {
+    if (!meterBuf) meterBuf = new Uint8Array(an.fftSize);
+    an.getByteTimeDomainData(meterBuf);
+    for (let i = 0; i < meterBuf.length; i++) peak = Math.max(peak, Math.abs(meterBuf[i] - 128) / 128);
+  }
+  const db = peak > 0 ? 20 * Math.log10(peak) : -120;
+  meterHold = Math.max(db, meterHold - 1.2);
+  $('meter-fill').style.width = Math.max(0, Math.min(100, (meterHold + 60) / 60 * 100)).toFixed(1) + '%';
+  $('meter-out').textContent = bad ? 'signal error' : meterHold < -60 ? 'no signal' : Math.round(meterHold) + ' dBFS';
+}
+$('tone-test').addEventListener('click', () => {
+  // 440 Hz straight to the output, past every instrument and effect
+  if (!ensureAudio()) return;
+  const t = ctx.currentTime + 0.02, o = ctx.createOscillator(), g = ctx.createGain();
+  o.frequency.value = 440;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.25, t + 0.01);
+  g.gain.setValueAtTime(0.25, t + 0.6);
+  g.gain.linearRampToValueAtTime(0, t + 0.65);
+  o.connect(g); g.connect(ctx.destination);
+  if (engine.analyser) g.connect(engine.analyser);
+  o.start(t); o.stop(t + 0.7);
+});
+$('file-test').addEventListener('click', async () => {
+  const slot = $('file-slot');
+  slot.textContent = 'Rendering the loop...';
+  try {
+    const r = await render({ loops: 2, tail: 2, blob: true });
+    const a = document.createElement('audio');
+    a.controls = true; a.setAttribute('playsinline', '');
+    a.src = URL.createObjectURL(r.blob);
+    slot.textContent = 'Rendered ' + r.seconds.toFixed(0) + ' s. If it does not start by itself, press play on the player.';
+    slot.appendChild(a);
+    const p = a.play(); if (p && p.catch) p.catch(() => {});
+  } catch (e) {
+    slot.textContent = 'Could not render the loop: ' + e.message;
+  }
+});
 
 function tick() {
   if (!playing) return;

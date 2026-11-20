@@ -6,8 +6,10 @@ plays note lists in the same shape as the part files `/push` reads (pitch with C
 start and duration in beats, velocity), so a sketch can go into a Session clip later
 without being rewritten.
 
-**Status: proof 1.** One page, one built-in test loop (4 bars, three parts), a tape-style
-master chain, pads for auditioning. It does not yet load part files, edit notes or export
+**Status: proof 2.** One page, one built-in test loop (4 bars, three parts), a tape-style
+master chain, pads for auditioning, and a sound check (output meter, raw test tone, the
+loop rendered to a file player) for telling a muted device from an engine that is not
+running. It does not yet load part files, edit notes or export
 MIDI.
 
 No song content lives here. The loop in the page is a test pattern.
